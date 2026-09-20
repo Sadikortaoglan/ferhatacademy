@@ -1,0 +1,603 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum AuditAction {
+  USER_CREATED
+  USER_UPDATED
+  USER_ROLE_CHANGED
+  SETTINGS_UPDATED
+  ACCESS_GRANTED
+  ACCESS_REVOKED
+  ACCESS_EXTENDED
+  COURSE_CREATED
+  COURSE_UPDATED
+  COURSE_PUBLISHED
+  ASSIGNMENT_CREATED
+  ASSIGNMENT_UPDATED
+  PRODUCT_CREATED
+  PRODUCT_UPDATED
+  PRODUCT_PUBLISHED
+  APPLICATION_SUBMITTED
+  APPLICATION_APPROVED
+  APPLICATION_REJECTED
+  APPLICATION_WAITLISTED
+  ORDER_CREATED
+  PAYMENT_REPORTED
+  PAYMENT_APPROVED
+  PAYMENT_REJECTED
+  ORDER_MARKED_PAID
+  ENTITLEMENT_CREATED_FROM_ORDER
+  USER_ACTIVATED
+  USER_DEACTIVATED
+}
+
+enum ProductType {
+  COURSE
+  SINGLE_LESSON
+  DIGITAL_PRODUCT
+  MENTORSHIP
+  CONSULTATION
+  LIVE_TRAINING
+  MEMBERSHIP
+  BUNDLE
+  PHYSICAL_PRODUCT
+}
+
+enum ProductStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum PurchaseMode {
+  DIRECT_PURCHASE
+  APPLICATION_OPTIONAL
+  APPLICATION_REQUIRED
+  APPLICATION_REQUIRED_BEFORE_PURCHASE
+  INVITE_ONLY
+}
+
+enum ProductGrantType {
+  COURSE_ACCESS
+  LESSON_ACCESS
+  SESSION_CREDIT
+  MEMBERSHIP_ACCESS
+  DOWNLOAD_ACCESS
+}
+
+enum InclusionType {
+  COURSE
+  VIDEO
+  LIVE_SESSION
+  CONSULTATION
+  DOWNLOAD
+  BONUS
+  RESOURCE
+  CUSTOM
+}
+
+enum ApplicationStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  WAITLISTED
+  CANCELLED
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAYMENT_REVIEW
+  PAID
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  BANK_TRANSFER
+  CASH
+  ADMIN_MANUAL
+}
+
+enum PaymentStatus {
+  PENDING
+  REPORTED
+  APPROVED
+  REJECTED
+  REFUNDED
+}
+
+enum CourseStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ContentVisibility {
+  PUBLIC
+  REGISTERED
+  ENTITLED
+  PRIVATE
+}
+
+enum LessonType {
+  VIDEO
+  TEXT
+}
+
+enum VideoProvider {
+  YOUTUBE
+  VIMEO
+  BUNNY
+  EXTERNAL
+}
+
+enum LessonProgressStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum EntitlementSource {
+  MANUAL
+  ORDER
+  MEMBERSHIP
+  MENTORSHIP
+  PROMOTION
+}
+
+enum EntitlementResourceType {
+  COURSE
+  LESSON
+}
+
+enum AssignmentStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum AssignmentItemType {
+  LESSON
+  TASK
+}
+
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  emailVerified   Boolean   @default(false)
+  name            String?
+  phone           String?
+  image           String?
+  avatar          String?
+  preferredLocale String    @default("tr")
+  role            Role      @default(USER)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  lastLoginAt     DateTime?
+  banned          Boolean   @default(false)
+  banReason       String?
+  banExpires      DateTime?
+  birthDate       DateTime?
+  city            String?
+  whyHere         String?   // comma-separated goals e.g. "ecommerce,meta-ads"
+  bio             String?
+
+  sessions             Session[]
+  accounts             Account[]
+  auditLogs            AuditLog[]        @relation("AuditActor")
+  lessonProgress       LessonProgress[]
+  entitlements         Entitlement[]     @relation("EntitlementUser")
+  entitlementsCreated  Entitlement[]     @relation("EntitlementCreatedBy")
+  assignments          Assignment[]      @relation("AssignmentUser")
+  assignmentsCreated   Assignment[]      @relation("AssignmentCreatedBy")
+  applications         Application[]     @relation("ApplicationUser")
+  applicationsReviewed Application[]     @relation("ApplicationReviewedBy")
+  orders               Order[]
+  paymentsApproved     Payment[]         @relation("PaymentApprovedBy")
+
+  @@map("users")
+}
+
+model Session {
+  id             String   @id @default(cuid())
+  userId         String
+  token          String   @unique
+  expiresAt      DateTime
+  ipAddress      String?
+  userAgent      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  impersonatedBy String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  userId                String
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("accounts")
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("verifications")
+}
+
+model SiteSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("site_settings")
+}
+
+model AuditLog {
+  id         String      @id @default(cuid())
+  action     AuditAction
+  actorId    String
+  targetId   String?
+  targetType String?
+  metadata   Json?
+  createdAt  DateTime    @default(now())
+
+  actor User @relation("AuditActor", fields: [actorId], references: [id])
+
+  @@map("audit_logs")
+}
+
+model Course {
+  id            String       @id @default(cuid())
+  slug          String       @unique
+  status        CourseStatus @default(DRAFT)
+  coverImageUrl   String?
+  applicationMode String       @default("NO_APPLICATION")
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  publishedAt     DateTime?
+
+  translations CourseTranslation[]
+  modules      Module[]
+  entitlements Entitlement[]
+  products     Product[]
+
+  @@map("courses")
+}
+
+model CourseTranslation {
+  id               String  @id @default(cuid())
+  courseId         String
+  locale           String
+  title            String
+  shortDescription String?
+  description      String?
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, locale])
+  @@map("course_translations")
+}
+
+model Module {
+  id        String   @id @default(cuid())
+  courseId  String
+  position  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  course       Course              @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  translations ModuleTranslation[]
+  lessons      Lesson[]
+
+  @@map("modules")
+}
+
+model ModuleTranslation {
+  id       String @id @default(cuid())
+  moduleId String
+  locale   String
+  title    String
+
+  module Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@unique([moduleId, locale])
+  @@map("module_translations")
+}
+
+model Lesson {
+  id              String            @id @default(cuid())
+  moduleId        String
+  type            LessonType        @default(VIDEO)
+  position        Int
+  visibility      ContentVisibility @default(ENTITLED)
+  isPreview       Boolean           @default(false)
+  durationSeconds Int?
+  videoProvider   VideoProvider?
+  videoExternalId String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  module          Module              @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  translations    LessonTranslation[]
+  progress        LessonProgress[]
+  assignmentItems AssignmentItem[]
+
+  @@map("lessons")
+}
+
+model LessonTranslation {
+  id          String  @id @default(cuid())
+  lessonId    String
+  locale      String
+  title       String
+  description String?
+  content     String?
+
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([lessonId, locale])
+  @@map("lesson_translations")
+}
+
+model LessonProgress {
+  id              String               @id @default(cuid())
+  userId          String
+  lessonId        String
+  status          LessonProgressStatus @default(NOT_STARTED)
+  progressSeconds Int                  @default(0)
+  progressPercent Int                  @default(0)
+  startedAt       DateTime?
+  lastViewedAt    DateTime?
+  completedAt     DateTime?
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+  @@map("lesson_progress")
+}
+
+model Entitlement {
+  id                String                  @id @default(cuid())
+  userId            String
+  resourceType      EntitlementResourceType
+  resourceId        String
+  sourceType        EntitlementSource       @default(MANUAL)
+  sourceReferenceId String?
+  startsAt          DateTime?
+  expiresAt         DateTime?
+  revokedAt         DateTime?
+  createdById       String
+  createdAt         DateTime                @default(now())
+
+  user      User    @relation("EntitlementUser", fields: [userId], references: [id], onDelete: Cascade)
+  createdBy User    @relation("EntitlementCreatedBy", fields: [createdById], references: [id])
+  course    Course? @relation(fields: [resourceId], references: [id], map: "entitlement_course_fk")
+
+  @@map("entitlements")
+}
+
+model Assignment {
+  id          String           @id @default(cuid())
+  userId      String
+  title       String
+  description String?
+  status      AssignmentStatus @default(ACTIVE)
+  createdById String
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  user      User             @relation("AssignmentUser", fields: [userId], references: [id], onDelete: Cascade)
+  createdBy User             @relation("AssignmentCreatedBy", fields: [createdById], references: [id])
+  items     AssignmentItem[]
+
+  @@map("assignments")
+}
+
+model AssignmentItem {
+  id           String             @id @default(cuid())
+  assignmentId String
+  position     Int
+  type         AssignmentItemType @default(LESSON)
+  lessonId     String?
+  title        String?
+  instructions String?
+  isRequired   Boolean            @default(true)
+  completedAt  DateTime?
+  createdAt    DateTime           @default(now())
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  lesson     Lesson?    @relation(fields: [lessonId], references: [id])
+
+  @@map("assignment_items")
+}
+
+model Product {
+  id             String        @id @default(cuid())
+  slug           String        @unique
+  type           ProductType
+  status         ProductStatus @default(DRAFT)
+  purchaseMode   PurchaseMode  @default(DIRECT_PURCHASE)
+  coverImageUrl  String?
+  price          Int           @default(0)
+  compareAtPrice Int?
+  currency       String        @default("TRY")
+  linkedCourseId String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  publishedAt    DateTime?
+
+  translations ProductTranslation[]
+  inclusions   ProductInclusion[]
+  grants       ProductGrant[]
+  applications Application[]
+  orderItems   OrderItem[]
+  linkedCourse Course?              @relation(fields: [linkedCourseId], references: [id])
+
+  @@map("products")
+}
+
+model ProductTranslation {
+  id               String  @id @default(cuid())
+  productId        String
+  locale           String
+  name             String
+  shortDescription String?
+  description      String?
+  seoTitle         String?
+  seoDescription   String?
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, locale])
+  @@map("product_translations")
+}
+
+model ProductInclusion {
+  id              String        @id @default(cuid())
+  productId       String
+  type            InclusionType @default(CUSTOM)
+  titleTr         String
+  titleEn         String?
+  descriptionTr   String?
+  descriptionEn   String?
+  quantity        Int?
+  durationMinutes Int?
+  position        Int           @default(0)
+  createdAt       DateTime      @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("product_inclusions")
+}
+
+model ProductGrant {
+  id        String           @id @default(cuid())
+  productId String
+  grantType ProductGrantType
+  resourceId String?
+  createdAt DateTime         @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("product_grants")
+}
+
+model Application {
+  id                String            @id @default(cuid())
+  userId            String
+  productId         String
+  status            ApplicationStatus @default(SUBMITTED)
+  phone             String?
+  currentExperience String?
+  currentSituation  String?
+  goal              String?
+  mainChallenge     String?
+  whyInterested     String?
+  preferredLanguage String?
+  optionalNote      String?
+  internalAdminNote String?
+  reviewedAt        DateTime?
+  reviewedById      String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  user       User    @relation("ApplicationUser", fields: [userId], references: [id], onDelete: Cascade)
+  product    Product @relation(fields: [productId], references: [id])
+  reviewedBy User?   @relation("ApplicationReviewedBy", fields: [reviewedById], references: [id])
+
+  @@unique([userId, productId])
+  @@map("applications")
+}
+
+model Order {
+  id          String      @id @default(cuid())
+  reference   String      @unique
+  userId      String
+  status      OrderStatus @default(PENDING_PAYMENT)
+  totalAmount Int
+  currency    String      @default("TRY")
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  paidAt      DateTime?
+
+  user     User        @relation(fields: [userId], references: [id])
+  items    OrderItem[]
+  payments Payment[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id                  String  @id @default(cuid())
+  orderId             String
+  productId           String?
+  productNameSnapshot String
+  productTypeSnapshot String
+  unitPrice           Int
+  quantity            Int     @default(1)
+  currency            String  @default("TRY")
+
+  order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product? @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
+
+model Payment {
+  id                String        @id @default(cuid())
+  orderId           String
+  method            PaymentMethod
+  status            PaymentStatus @default(PENDING)
+  amount            Int
+  currency          String        @default("TRY")
+  transferReference String?
+  userNote          String?
+  adminNote         String?
+  reportedAt        DateTime?
+  approvedAt        DateTime?
+  approvedById      String?
+  rejectedAt        DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  order      Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  approvedBy User? @relation("PaymentApprovedBy", fields: [approvedById], references: [id])
+
+  @@map("payments")
+}
