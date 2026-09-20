@@ -215,6 +215,7 @@
     "orders": "Siparişler",
     "payments": "Ödemeler",
     "assignments": "Ödevler",
+    "edit": "Düzenle",
     "access": "Erişim",
     "settings": "Site Ayarları",
     "userDetail": "Kullanıcı Detayı",
@@ -349,6 +350,44 @@
     "unauthorized": "Bu sayfaya erişim yetkiniz yok",
     "serverError": "Sunucu hatası oluştu",
     "tryAgain": "Tekrar deneyin"
+  },
+  "enums": {
+    "purchaseMode": {
+      "DIRECT_PURCHASE": "Direkt Satın Al",
+      "APPLICATION_OPTIONAL": "Başvuru (İsteğe Bağlı)",
+      "APPLICATION_REQUIRED": "Başvuru Zorunlu",
+      "APPLICATION_REQUIRED_BEFORE_PURCHASE": "Önce Başvuru, Sonra Satın Al",
+      "INVITE_ONLY": "Sadece Davetiyeyle"
+    },
+    "productType": {
+      "COURSE": "Kurs",
+      "MENTORSHIP": "Mentorluk",
+      "CONSULTATION": "Danışmanlık",
+      "LIVE_TRAINING": "Canlı Eğitim",
+      "MEMBERSHIP": "Üyelik",
+      "BUNDLE": "Paket",
+      "DIGITAL_PRODUCT": "Dijital Ürün",
+      "PHYSICAL_PRODUCT": "Fiziksel Ürün"
+    },
+    "courseStatus": {
+      "DRAFT": "Taslak",
+      "PUBLISHED": "Yayında",
+      "ARCHIVED": "Arşiv"
+    },
+    "productStatus": {
+      "DRAFT": "Taslak",
+      "PUBLISHED": "Yayında",
+      "ARCHIVED": "Arşiv"
+    },
+    "assignmentType": {
+      "LESSON": "Ders",
+      "TASK": "Görev"
+    },
+    "paymentMethod": {
+      "BANK_TRANSFER": "Havale / EFT",
+      "CASH": "Nakit",
+      "ADMIN_MANUAL": "Manuel (Admin)"
+    }
   },
   "footer": {
     "tagline": "Dijital pazarlama alanında gerçek beceriler.",

@@ -215,6 +215,7 @@
     "orders": "Orders",
     "payments": "Payments",
     "assignments": "Assignments",
+    "edit": "Edit",
     "access": "Access",
     "settings": "Site Settings",
     "userDetail": "User Detail",
@@ -349,6 +350,44 @@
     "unauthorized": "You are not authorized to access this page",
     "serverError": "A server error occurred",
     "tryAgain": "Try again"
+  },
+  "enums": {
+    "purchaseMode": {
+      "DIRECT_PURCHASE": "Direct Purchase",
+      "APPLICATION_OPTIONAL": "Application (Optional)",
+      "APPLICATION_REQUIRED": "Application Required",
+      "APPLICATION_REQUIRED_BEFORE_PURCHASE": "Apply Before Purchase",
+      "INVITE_ONLY": "Invite Only"
+    },
+    "productType": {
+      "COURSE": "Course",
+      "MENTORSHIP": "Mentorship",
+      "CONSULTATION": "Consultation",
+      "LIVE_TRAINING": "Live Training",
+      "MEMBERSHIP": "Membership",
+      "BUNDLE": "Bundle",
+      "DIGITAL_PRODUCT": "Digital Product",
+      "PHYSICAL_PRODUCT": "Physical Product"
+    },
+    "courseStatus": {
+      "DRAFT": "Draft",
+      "PUBLISHED": "Published",
+      "ARCHIVED": "Archived"
+    },
+    "productStatus": {
+      "DRAFT": "Draft",
+      "PUBLISHED": "Published",
+      "ARCHIVED": "Archived"
+    },
+    "assignmentType": {
+      "LESSON": "Lesson",
+      "TASK": "Task"
+    },
+    "paymentMethod": {
+      "BANK_TRANSFER": "Bank Transfer",
+      "CASH": "Cash",
+      "ADMIN_MANUAL": "Manual (Admin)"
+    }
   },
   "footer": {
     "tagline": "Real skills in digital marketing.",

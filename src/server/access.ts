@@ -98,7 +98,13 @@ export async function getUserCourses(userId: string) {
       },
     },
   });
-  return entitlements.map((e) => e.course).filter(Boolean);
+  const courses = entitlements.map((e) => e.course).filter(Boolean);
+  const seen = new Set<string>();
+  return courses.filter((c) => {
+    if (!c || seen.has(c.id)) return false;
+    seen.add(c.id);
+    return true;
+  });
 }
 
 export function getCourseProgress(

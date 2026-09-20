@@ -1,16 +1,18 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createProduct } from "@/features/commerce/actions/products";
 
-const productTypes = ["COURSE", "MENTORSHIP", "CONSULTATION", "LIVE_TRAINING", "MEMBERSHIP", "BUNDLE", "DIGITAL_PRODUCT", "PHYSICAL_PRODUCT"];
-const purchaseModes = ["DIRECT_PURCHASE", "APPLICATION_OPTIONAL", "APPLICATION_REQUIRED", "APPLICATION_REQUIRED_BEFORE_PURCHASE", "INVITE_ONLY"];
+const productTypes = ["COURSE", "MENTORSHIP", "CONSULTATION", "LIVE_TRAINING", "MEMBERSHIP", "BUNDLE", "DIGITAL_PRODUCT", "PHYSICAL_PRODUCT"] as const;
+const purchaseModes = ["DIRECT_PURCHASE", "APPLICATION_OPTIONAL", "APPLICATION_REQUIRED", "APPLICATION_REQUIRED_BEFORE_PURCHASE", "INVITE_ONLY"] as const;
 
 export function NewProductForm({ locale }: { locale: string }) {
   const router = useRouter();
+  const te = useTranslations("enums");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -61,13 +63,17 @@ export function NewProductForm({ locale }: { locale: string }) {
         <div className="space-y-2">
           <Label>Tür *</Label>
           <select name="type" defaultValue="COURSE" className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-            {productTypes.map((t) => <option key={t} value={t}>{t}</option>)}
+            {productTypes.map((t) => (
+              <option key={t} value={t}>{te(`productType.${t}`)}</option>
+            ))}
           </select>
         </div>
         <div className="space-y-2">
           <Label>Satın Alma Modu *</Label>
           <select name="purchaseMode" defaultValue="DIRECT_PURCHASE" className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-            {purchaseModes.map((m) => <option key={m} value={m}>{m}</option>)}
+            {purchaseModes.map((m) => (
+              <option key={m} value={m}>{te(`purchaseMode.${m}`)}</option>
+            ))}
           </select>
         </div>
       </div>

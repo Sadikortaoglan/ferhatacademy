@@ -111,7 +111,8 @@ function AddItemForm({
   availableLessons: Props["availableLessons"];
   locale: string;
   onAdded: (item: AssignmentItem) => void;
-}) {
+) {
+  const te = useTranslations("enums");
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
@@ -163,8 +164,8 @@ function AddItemForm({
             onChange={(e) => setForm({ ...form, type: e.target.value })}
             className="w-full h-8 rounded-md border border-input bg-background px-2 text-sm"
           >
-            <option value="LESSON">LESSON</option>
-            <option value="TASK">TASK</option>
+            <option value="LESSON">{te("assignmentType.LESSON")}</option>
+            <option value="TASK">{te("assignmentType.TASK")}</option>
           </select>
         </div>
         <div className="flex items-end pb-0.5">
