@@ -1,26 +1,69 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  /* Brand — warm orange */
+  --color-primary: hsl(24 95% 53%);
+  --color-primary-foreground: hsl(0 0% 100%);
+
+  --color-secondary: hsl(220 15% 96%);
+  --color-secondary-foreground: hsl(220 15% 15%);
+
+  --color-accent: hsl(24 95% 53%);
+  --color-accent-foreground: hsl(0 0% 100%);
+
+  /* Light surfaces */
+  --color-background: hsl(0 0% 98%);
+  --color-surface: hsl(0 0% 100%);
+  --color-surface-elevated: hsl(0 0% 100%);
+  --color-foreground: hsl(220 15% 10%);
+  --color-muted: hsl(220 10% 94%);
+  --color-muted-foreground: hsl(220 8% 50%);
+  --color-border: hsl(220 10% 88%);
+  --color-input: hsl(220 10% 88%);
+  --color-ring: hsl(24 95% 53%);
+
+  /* Semantic */
+  --color-success: hsl(142 71% 40%);
+  --color-success-foreground: hsl(0 0% 100%);
+  --color-warning: hsl(38 92% 50%);
+  --color-warning-foreground: hsl(25 40% 20%);
+  --color-warning-background: hsl(48 100% 95%);
+  --color-danger: hsl(0 84% 55%);
+  --color-danger-foreground: hsl(0 0% 100%);
+
+  /* Dark section palette (used via .section-dark class) */
+  --color-dark-bg: hsl(220 20% 8%);
+  --color-dark-surface: hsl(220 18% 12%);
+  --color-dark-foreground: hsl(0 0% 95%);
+  --color-dark-muted: hsl(220 15% 25%);
+  --color-dark-border: hsl(220 15% 20%);
+
+  --radius: 0.5rem;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    border-color: var(--color-border);
+    box-sizing: border-box;
+  }
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    margin: 0;
+    font-family: var(--font-geist-sans, system-ui, sans-serif);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    text-wrap: balance;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Dark section utility — applied to dark-background strips */
+.section-dark {
+  background-color: var(--color-dark-bg);
+  color: var(--color-dark-foreground);
+}
+.section-dark-surface {
+  background-color: var(--color-dark-surface);
+  color: var(--color-dark-foreground);
 }
