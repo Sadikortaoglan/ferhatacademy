@@ -373,8 +373,8 @@ export default async function LivePage({ params }: { params: Promise<{ locale: s
             </div>
             <p className="text-white/60 text-sm leading-relaxed italic">
               {isTr
-                ? "&ldquo;Her öğrencinin durumu farklı. Eğitimde ilk yaptığımız şey senin nerede olduğunu anlamak.&rdquo;"
-                : "\"Every student's situation is different. The first thing we do in training is understand where you are.\""}
+                ? "“Her öğrencinin durumu farklı. Eğitimde ilk yaptığımız şey senin nerede olduğunu anlamak.”"
+                : "“Every student’s situation is different. The first thing we do in training is understand where you are.”"}
             </p>
           </div>
         </div>

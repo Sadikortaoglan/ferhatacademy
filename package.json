@@ -11,6 +11,7 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
+    "db:seed:prod": "tsx scripts/seed-production.ts",
     "db:studio": "prisma studio",
     "test": "vitest run",
     "test:unit": "vitest run --config vitest.config.ts",

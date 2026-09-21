@@ -16,7 +16,7 @@ export default async function PurchasesPage({
   const orders = await prisma.order.findMany({
     where: { userId: user.id },
     include: {
-      items: true,
+      items: { include: { product: { select: { slug: true } } } },
       payments: { orderBy: { createdAt: "desc" }, take: 1 },
     },
     orderBy: { createdAt: "desc" },
@@ -60,8 +60,8 @@ export default async function PurchasesPage({
                   <span className="font-semibold">{formatPrice(item.unitPrice, item.currency, locale)}</span>
                 </div>
               ))}
-              {order.status === "PENDING_PAYMENT" && order.payments.length === 0 && order.items[0]?.productId && (
-                <Link href={`/${locale}/checkout/${order.items[0].productId}`}>
+              {order.status === "PENDING_PAYMENT" && order.payments.length === 0 && order.items[0]?.product?.slug && (
+                <Link href={`/${locale}/checkout/${order.items[0].product.slug}`}>
                   <Button size="sm" variant="outline">{locale === "tr" ? "Ödemeye Devam Et" : "Continue Payment"}</Button>
                 </Link>
               )}

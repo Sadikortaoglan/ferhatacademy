@@ -28,7 +28,18 @@ export default async function AcademyPage({
       <Section title={t("featuredTitle")} subtitle={t("featuredSubtitle")}>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {mockPrograms.map((program) => (
-            <ProgramCard key={program.id} program={program} locale={locale} />
+            <ProgramCard
+              key={program.id}
+              program={program}
+              locale={locale}
+              href={
+                program.type === "COURSE"
+                  ? `/${locale}/courses/${program.slug}`
+                  : program.type === "LIVE_TRAINING"
+                  ? `/${locale}/live`
+                  : `/${locale}/products/${program.slug}`
+              }
+            />
           ))}
         </div>
       </Section>
