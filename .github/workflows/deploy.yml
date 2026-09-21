@@ -1,0 +1,108 @@
+name: Build & Deploy
+
+on:
+  push:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/ferhatacademy
+
+jobs:
+  # ── quality gates ──────────────────────────────────────────────────────────
+  quality:
+    name: Lint · Typecheck · Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Build
+        run: pnpm build
+        env:
+          # Dummy values so build doesn't fail on missing env
+          DATABASE_URL: postgresql://x:x@localhost:5432/x
+          BETTER_AUTH_SECRET: dummy-secret-for-build-only
+          BETTER_AUTH_URL: https://ferhatacademy.com
+          NEXT_PUBLIC_APP_URL: https://ferhatacademy.com
+
+  # ── docker build & push ────────────────────────────────────────────────────
+  docker:
+    name: Docker → GHCR
+    runs-on: ubuntu-latest
+    needs: quality
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=sha-
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            DATABASE_URL=postgresql://x:x@localhost:5432/x
+            BETTER_AUTH_SECRET=dummy-secret-for-build-only
+            BETTER_AUTH_URL=https://ferhatacademy.com
+            NEXT_PUBLIC_APP_URL=https://ferhatacademy.com
+
+  # ── deploy to server ───────────────────────────────────────────────────────
+  deploy:
+    name: Deploy → Hetzner
+    runs-on: ubuntu-latest
+    needs: docker
+    environment: production
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            cd /opt/ferhatacademy
+            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            docker compose pull
+            docker compose up -d --remove-orphans
+            docker image prune -f
+            curl -sf http://localhost:3010/api/health || exit 1
+            echo "✅ Ferhat Academy deployed successfully"

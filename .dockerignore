@@ -1,0 +1,17 @@
+.git
+.next
+node_modules
+.env
+.env.*
+!.env.example
+*.md
+.dockerignore
+Dockerfile
+docs/
+tests/
+*.test.ts
+*.test.tsx
+coverage/
+.playwright/
+prisma/seed.ts
+scripts/seed-production.ts
