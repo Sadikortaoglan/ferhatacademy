@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Lock, Play, UserPlus } from "lucide-react";
 import type { MockFreeContent, VisibilityType } from "@/config/mock-content";
@@ -43,9 +44,10 @@ export function ContentCard({ content, locale }: ContentCardProps) {
   const desc = isTr ? content.descTr : content.descEn;
   const vis = visibilityConfig[content.visibility];
   const Icon = vis.icon;
+  const href = content.href ? `/${locale}${content.href}` : undefined;
 
-  return (
-    <div className="rounded-xl overflow-hidden border border-border bg-surface">
+  const card = (
+    <div className="rounded-xl overflow-hidden border border-border bg-surface group-hover:border-primary/50 transition-colors">
       {/* Cover */}
       <div
         className={cn(
@@ -53,7 +55,7 @@ export function ContentCard({ content, locale }: ContentCardProps) {
           content.coverBg
         )}
       >
-        <div className="rounded-full bg-white/10 p-4 backdrop-blur-sm">
+        <div className="rounded-full bg-white/10 p-4 backdrop-blur-sm group-hover:bg-white/20 transition-colors">
           <Play className="h-8 w-8 text-white fill-white" />
         </div>
         <div className="absolute top-3 left-3">
@@ -79,4 +81,14 @@ export function ContentCard({ content, locale }: ContentCardProps) {
       </div>
     </div>
   );
+
+  if (href) {
+    return (
+      <Link href={href} className="group block cursor-pointer">
+        {card}
+      </Link>
+    );
+  }
+
+  return <div className="group">{card}</div>;
 }

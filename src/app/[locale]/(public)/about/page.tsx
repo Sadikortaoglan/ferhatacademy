@@ -1,55 +1,43 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 
-async function getSocialLinks() {
-  const keys = ["instagramUrl", "youtubeUrl", "linkedinUrl", "twitterUrl"];
+async function getAboutData() {
+  const keys = [
+    "instagramUrl", "youtubeUrl", "linkedinUrl", "twitterUrl",
+    "about.heroTitle", "about.heroBio", "about.heroImageUrl", "about.badge",
+    "about.stats", "about.timeline", "about.expertise", "about.gallery",
+  ];
   const rows = await prisma.siteSetting.findMany({ where: { key: { in: keys } } });
   const map: Record<string, string> = {};
   rows.forEach((r) => { map[r.key] = r.value; });
-  return map;
+  return {
+    instagramUrl: map["instagramUrl"] || "#",
+    youtubeUrl: map["youtubeUrl"] || "#",
+    heroTitle: map["about.heroTitle"] ?? "Merhaba,\nben Ferhat.",
+    heroBio: map["about.heroBio"] ?? "Dijital pazarlama alanında işletmelerin gerçek sonuçlar elde etmesine yardımcı olan bir reklam stratejisti ve eğitmeniyim.",
+    heroImageUrl: map["about.heroImageUrl"] ?? "",
+    badge: map["about.badge"] ?? "Danışmanlık & Eğitim",
+    stats: (map["about.stats"] ? JSON.parse(map["about.stats"]) : [
+      { value: "500+", label: "Mutlu Öğrenci" },
+      { value: "5+", label: "Yıllık Deneyim" },
+      { value: "₺10M+", label: "Yönetilen Reklam Bütçesi" },
+      { value: "100+", label: "Danışmanlık Verilen İşletme" },
+    ]) as { value: string; label: string }[],
+    timeline: (map["about.timeline"] ? JSON.parse(map["about.timeline"]) : [
+      { year: "2018", title: "Dijital Pazarlamaya İlk Adım", desc: "E-ticaret dünyasına girerek Meta Ads ve dijital pazarlama araçlarını derinlemesine öğrenmeye başladı.", color: "bg-orange-500" },
+      { year: "2020", title: "Reklam Yöneticisi", desc: "zovria.com bünyesinde reklam yöneticisi olarak işletmelere yüksek ROI getiren kampanyalar yönetti.", color: "bg-amber-500" },
+      { year: "2022", title: "Danışmanlık & Eğitim", desc: "Yüzlerce girişimci ve işletme sahibine Meta Ads, e-ticaret ve dijital strateji konularında danışmanlık vermeye başladı.", color: "bg-yellow-500" },
+      { year: "2024", title: "Ferhat Academy", desc: "Bilgi ve deneyimini sistematik hale getirip online bir eğitim platformuna dönüştürdü. Artık herkes bu bilgiye ulaşabiliyor.", color: "bg-primary" },
+    ]) as { year: string; title: string; desc: string; color: string }[],
+    expertise: (map["about.expertise"] ? JSON.parse(map["about.expertise"]) : [
+      { icon: "📣", title: "Meta Ads", desc: "Facebook ve Instagram kampanyalarında strateji, optimizasyon ve ölçeklendirme" },
+      { icon: "🛒", title: "E-Ticaret", desc: "Mağaza kurulumundan satış artışına kadar tüm süreç" },
+      { icon: "📊", title: "Performans Pazarlama", desc: "Veriyle yönlendirilen kararlar, ölçülebilir büyüme" },
+      { icon: "🎯", title: "Hedef Kitle Analizi", desc: "Doğru kitleye, doğru mesajla, doğru zamanda ulaşmak" },
+    ]) as { icon: string; title: string; desc: string }[],
+    gallery: map["about.gallery"] ? JSON.parse(map["about.gallery"]) as { url: string; alt: string }[] : [],
+  };
 }
-
-const STATS = [
-  { value: "500+", label: "Mutlu Öğrenci" },
-  { value: "5+", label: "Yıllık Deneyim" },
-  { value: "₺10M+", label: "Yönetilen Reklam Bütçesi" },
-  { value: "100+", label: "Danışmanlık Verilen İşletme" },
-];
-
-// TODO: Fill with real timeline events from Ferhat
-const TIMELINE = [
-  {
-    year: "2018",
-    title: "Dijital Pazarlamaya İlk Adım",
-    desc: "E-ticaret dünyasına girerek Meta Ads ve dijital pazarlama araçlarını derinlemesine öğrenmeye başladı.",
-    color: "bg-orange-500",
-  },
-  {
-    year: "2020",
-    title: "Reklam Yöneticisi",
-    desc: "zovria.com bünyesinde reklam yöneticisi olarak işletmelere yüksek ROI getiren kampanyalar yönetti.",
-    color: "bg-amber-500",
-  },
-  {
-    year: "2022",
-    title: "Danışmanlık & Eğitim",
-    desc: "Yüzlerce girişimci ve işletme sahibine Meta Ads, e-ticaret ve dijital strateji konularında danışmanlık vermeye başladı.",
-    color: "bg-yellow-500",
-  },
-  {
-    year: "2024",
-    title: "Ferhat Academy",
-    desc: "Bilgi ve deneyimini sistematik hale getirip online bir eğitim platformuna dönüştürdü. Artık herkes bu bilgiye ulaşabiliyor.",
-    color: "bg-primary",
-  },
-];
-
-const EXPERTISE = [
-  { icon: "📣", title: "Meta Ads", desc: "Facebook ve Instagram kampanyalarında strateji, optimizasyon ve ölçeklendirme" },
-  { icon: "🛒", title: "E-Ticaret", desc: "Mağaza kurulumundan satış artışına kadar tüm süreç" },
-  { icon: "📊", title: "Performans Pazarlama", desc: "Veriyle yönlendirilen kararlar, ölçülebilir büyüme" },
-  { icon: "🎯", title: "Hedef Kitle Analizi", desc: "Doğru kitleye, doğru mesajla, doğru zamanda ulaşmak" },
-];
 
 export default async function AboutPage({
   params,
@@ -57,10 +45,12 @@ export default async function AboutPage({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
-  const social = await getSocialLinks();
+  const data = await getAboutData();
 
-  const INSTAGRAM_URL = social.instagramUrl || "#";
-  const YOUTUBE_URL = social.youtubeUrl || "#";
+  const INSTAGRAM_URL = data.instagramUrl;
+  const YOUTUBE_URL = data.youtubeUrl;
+  const { heroTitle, heroBio, heroImageUrl, badge, stats: STATS, timeline: TIMELINE, expertise: EXPERTISE, gallery } = data;
+  const heroLines = heroTitle.split("\n");
 
   return (
     <>
@@ -75,18 +65,20 @@ export default async function AboutPage({
             <div className="space-y-6">
               <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm text-white/60 backdrop-blur">
                 <span className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
-                Danışmanlık & Eğitim
+                {badge}
               </div>
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white leading-[1.05]">
-                Merhaba,<br />
-                ben{" "}
-                <span className="bg-gradient-to-r from-primary to-amber-400 bg-clip-text text-transparent">
-                  Ferhat.
-                </span>
+                {heroLines[0]}
+                {heroLines.length > 1 && (
+                  <>
+                    <br />
+                    <span className="bg-gradient-to-r from-primary to-amber-400 bg-clip-text text-transparent">
+                      {heroLines.slice(1).join(" ")}
+                    </span>
+                  </>
+                )}
               </h1>
-              <p className="text-lg text-white/60 leading-relaxed">
-                Dijital pazarlama alanında işletmelerin gerçek sonuçlar elde etmesine yardımcı olan bir reklam stratejisti ve eğitmeniyim.
-              </p>
+              <p className="text-lg text-white/60 leading-relaxed">{heroBio}</p>
               <div className="flex flex-wrap gap-3 pt-2">
                 <a
                   href={INSTAGRAM_URL}
@@ -109,20 +101,21 @@ export default async function AboutPage({
               </div>
             </div>
 
-            {/* Photo placeholder — replace src with real photo */}
             <div className="flex justify-center md:justify-end">
               <div className="relative">
                 <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-primary/40 to-amber-500/20 blur-xl scale-110" />
                 <div className="relative h-72 w-56 sm:h-80 sm:w-64 rounded-3xl overflow-hidden border border-white/10 bg-white/5 flex items-center justify-center">
-                  {/* TODO: Replace with real photo: <img src="..." className="w-full h-full object-cover" alt="Ferhat Ortaoğlan" /> */}
-                  <div className="text-center space-y-2 p-6">
-                    <div className="text-5xl">📸</div>
-                    <p className="text-xs text-white/30">Fotoğraf yakında</p>
-                  </div>
+                  {heroImageUrl ? (
+                    <img src={heroImageUrl} className="w-full h-full object-cover" alt="Ferhat" />
+                  ) : (
+                    <div className="text-center space-y-2 p-6">
+                      <div className="text-5xl">📸</div>
+                      <p className="text-xs text-white/30">Fotoğraf yakında</p>
+                    </div>
+                  )}
                 </div>
-                {/* Floating badge */}
                 <div className="absolute -bottom-4 -left-4 rounded-xl bg-primary px-4 py-2 shadow-xl">
-                  <p className="text-xs font-bold text-white">Meta Ads Uzmanı</p>
+                  <p className="text-xs font-bold text-white">{badge}</p>
                 </div>
               </div>
             </div>
@@ -203,6 +196,22 @@ export default async function AboutPage({
           </p>
         </div>
       </section>
+
+      {/* Gallery */}
+      {gallery.length > 0 && (
+        <section className="bg-background py-14 px-4">
+          <div className="max-w-5xl mx-auto space-y-8">
+            <h2 className="text-2xl sm:text-3xl font-black text-foreground text-center">Galeri</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              {gallery.map((img, i) => (
+                <div key={i} className="aspect-square rounded-xl overflow-hidden">
+                  <img src={img.url} alt={img.alt} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* CTA */}
       <section className="relative overflow-hidden bg-[#0f0f0f] px-4 py-16 sm:py-20 text-center">

@@ -1,6 +1,7 @@
 import { requireAdmin } from "@/server/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "@/server/commerce";
 import { PublishProductButton, ArchiveProductButton } from "@/features/commerce/components/product-admin-buttons";
@@ -12,6 +13,7 @@ export default async function AdminProductDetailPage({
 }) {
   const { locale, productId } = await params;
   await requireAdmin(locale);
+  const te = await getTranslations("enums");
 
   const product = await prisma.product.findUnique({
     where: { id: productId },
@@ -30,15 +32,15 @@ export default async function AdminProductDetailPage({
     <div className="space-y-6 max-w-3xl">
       <div className="flex items-center gap-4">
         <h1 className="text-2xl font-black flex-1">{tr?.name ?? product.slug}</h1>
-        <Badge variant={statusBadge}>{product.status}</Badge>
+        <Badge variant={statusBadge}>{te(`productStatus.${product.status}`)}</Badge>
       </div>
 
       <div className="border border-border rounded-xl p-5 bg-surface space-y-4">
         <h2 className="font-bold">Genel Bilgiler</h2>
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div><span className="text-muted-foreground">Slug:</span> <span className="font-mono">{product.slug}</span></div>
-          <div><span className="text-muted-foreground">Tür:</span> {product.type}</div>
-          <div><span className="text-muted-foreground">Satın Alma Modu:</span> {product.purchaseMode}</div>
+          <div><span className="text-muted-foreground">Tür:</span> {te(`productType.${product.type}`)}</div>
+          <div><span className="text-muted-foreground">Satın Alma Modu:</span> {te(`purchaseMode.${product.purchaseMode}`)}</div>
           <div><span className="text-muted-foreground">Fiyat:</span> {formatPrice(product.price, product.currency, locale)}</div>
         </div>
         {tr?.description && (

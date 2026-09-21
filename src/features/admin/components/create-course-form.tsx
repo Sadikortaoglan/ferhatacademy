@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { useForm, useWatch, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod/v4";
 import { useRouter } from "next/navigation";
@@ -83,17 +83,31 @@ function CoverPreview({
   const renderPreview = () => {
     if (youtubeId) {
       return (
-        <div className="relative rounded-xl overflow-hidden border border-border aspect-video">
-          <iframe
-            src={`https://www.youtube.com/embed/${youtubeId}`}
-            className="w-full h-full"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
+        <a
+          href={`https://www.youtube.com/watch?v=${youtubeId}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="relative block rounded-xl overflow-hidden border border-border aspect-video group"
+        >
+          <img
+            key={youtubeId}
+            src={`https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg`}
+            alt="YouTube kapak"
+            className="w-full h-full object-cover"
+            onError={(e) => { (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`; }}
           />
+          <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-colors">
+            <div className="w-14 h-14 rounded-full bg-red-600 flex items-center justify-center shadow-lg">
+              <svg viewBox="0 0 24 24" className="w-6 h-6 fill-white ml-1"><path d="M8 5v14l11-7z"/></svg>
+            </div>
+          </div>
           <div className="absolute top-2 right-2 flex items-center gap-1.5 bg-red-600/90 text-white text-xs font-medium px-2.5 py-1 rounded-full">
             ▶ YouTube
           </div>
-        </div>
+          <div className="absolute bottom-2 left-2 text-xs text-white/80 bg-black/50 px-2 py-0.5 rounded">
+            Açmak için tıkla
+          </div>
+        </a>
       );
     }
     if (!url) {
@@ -181,8 +195,17 @@ export function CreateCourseForm({ locale }: { locale: string }) {
             <Input placeholder="meta-reklamcilik-temelleri" {...register("slug")} />
             {errors.slug
               ? <p className="text-xs text-danger">{errors.slug.message}</p>
-              : <p className="text-xs text-muted-foreground">Kursun internet adresinin son kısmı. Örnek: <span className="font-mono">meta-ads-2025</span></p>
-            }
+              : null}
+            <div className="text-xs text-muted-foreground space-y-1 pt-0.5">
+              <p>Kursun internet adresinin son kısmı — örnek: <span className="font-mono bg-muted px-1 rounded">meta-ads-2025</span></p>
+              <ul className="flex flex-wrap gap-x-4 gap-y-0.5 mt-1">
+                <li className="flex items-center gap-1"><span className="text-emerald-500">✓</span> Küçük harf (a-z)</li>
+                <li className="flex items-center gap-1"><span className="text-emerald-500">✓</span> Rakam (0-9)</li>
+                <li className="flex items-center gap-1"><span className="text-emerald-500">✓</span> Tire (-)</li>
+                <li className="flex items-center gap-1"><span className="text-danger">✗</span> Boşluk veya büyük harf</li>
+                <li className="flex items-center gap-1"><span className="text-danger">✗</span> URL (youtube.com vs.)</li>
+              </ul>
+            </div>
           </div>
 
           {/* Başlıklar */}
@@ -215,10 +238,17 @@ export function CreateCourseForm({ locale }: { locale: string }) {
             <Label>{t("coverImageUrl")} <span className="text-muted-foreground text-xs font-normal">(YouTube linki veya görsel URL)</span></Label>
             <div className="grid sm:grid-cols-2 gap-4 items-start">
               <div className="space-y-2">
-                <Input
-                  type="url"
-                  placeholder="https://images.unsplash.com/... veya youtube.com/..."
-                  {...register("coverImageUrl")}
+                <Controller
+                  control={control}
+                  name="coverImageUrl"
+                  render={({ field }) => (
+                    <Input
+                      type="url"
+                      placeholder="https://images.unsplash.com/... veya youtube.com/..."
+                      {...field}
+                      value={field.value ?? ""}
+                    />
+                  )}
                 />
                 <p className="text-xs text-muted-foreground">YouTube linki girer isen video, resim linki girer isen resim görürsün</p>
               </div>

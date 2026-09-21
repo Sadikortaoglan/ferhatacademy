@@ -16,6 +16,7 @@ import {
   FileText,
   CreditCard,
   Receipt,
+  UserCircle,
 } from "lucide-react";
 
 const getNavItems = (locale: string) => [
@@ -29,6 +30,7 @@ const getNavItems = (locale: string) => [
   { href: `/${locale}/admin/assignments`, label: "admin.assignments", icon: ClipboardList, exact: false },
   { href: `/${locale}/admin/access`, label: "admin.access", icon: ShieldCheck, exact: false },
   { href: `/${locale}/admin/audit`, label: "admin.auditLog", icon: ScrollText, exact: false },
+  { href: `/${locale}/admin/about`, label: "admin.aboutPage", icon: UserCircle, exact: false },
   { href: `/${locale}/admin/settings`, label: "admin.settings", icon: Settings, exact: false },
 ];
 

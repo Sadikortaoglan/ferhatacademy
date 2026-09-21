@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
+import { getSession } from "@/server/auth";
 import { LoginForm } from "@/features/auth/components/login-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AuthPageShell } from "@/features/auth/components/auth-page-shell";
@@ -10,6 +12,12 @@ export default async function LoginPage({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+  const session = await getSession();
+  if (session?.user) {
+    const role = (session.user as { role?: string }).role;
+    if (role === "ADMIN" || role === "SUPER_ADMIN") redirect(`/${locale}/admin`);
+    redirect(`/${locale}/dashboard`);
+  }
   const t = await getTranslations("auth");
 
   return (

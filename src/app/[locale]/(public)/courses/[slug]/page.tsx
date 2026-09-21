@@ -41,6 +41,15 @@ export default async function PublicCourseDetailPage({
     ? await canAccessCourse(session.user.id, course.id)
     : false;
 
+  // Find the published product linked to this course to determine purchaseMode
+  const linkedProduct = await prisma.product.findFirst({
+    where: {
+      status: "PUBLISHED",
+      grants: { some: { resourceId: course.id } },
+    },
+    select: { purchaseMode: true, price: true, currency: true },
+  });
+
   const courseTr = course.translations.find((tr) => tr.locale === locale) ?? course.translations[0];
   const totalLessons = course.modules.reduce((sum, m) => sum + m.lessons.length, 0);
 
@@ -75,16 +84,38 @@ export default async function PublicCourseDetailPage({
             <Button size="lg" variant="outline" disabled>Kayıt Kapalı</Button>
           ) : session?.user ? (
             <Button size="lg" variant="outline" disabled>{t("noAccess")}</Button>
-          ) : (
-            <Link href={`/${locale}/login`}>
-              <Button size="lg">{t("loginToAccess")}</Button>
-            </Link>
-          )}
+          ) : (() => {
+            const mode = linkedProduct?.purchaseMode ?? "DIRECT_PURCHASE";
+            const label =
+              mode === "INVITE_ONLY" ? "Sadece Davetiyeyle" :
+              mode === "APPLICATION_REQUIRED" || mode === "APPLICATION_REQUIRED_BEFORE_PURCHASE" || mode === "APPLICATION_OPTIONAL" ? "Başvur" :
+              "Satın Al";
+            return (
+              <Link href={`/${locale}/login`}>
+                <Button size="lg">{label}</Button>
+              </Link>
+            );
+          })()}
         </div>
         <div className="aspect-video rounded-xl overflow-hidden bg-muted">
-          {course.coverImageUrl ? (
-            <img src={course.coverImageUrl} alt={courseTr?.title ?? ""} className="w-full h-full object-cover" />
-          ) : (
+          {course.coverImageUrl ? (() => {
+            const ytMatch = course.coverImageUrl.match(
+              /(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/
+            );
+            const ytId = ytMatch?.[1];
+            if (ytId) {
+              return (
+                <iframe
+                  src={`https://www.youtube.com/embed/${ytId}?rel=0&modestbranding=1`}
+                  className="w-full h-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  title={courseTr?.title ?? "Kurs Tanıtım Videosu"}
+                />
+              );
+            }
+            return <img src={course.coverImageUrl} alt={courseTr?.title ?? ""} className="w-full h-full object-cover" />;
+          })() : (
             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
               <span className="text-6xl font-black text-primary/20 uppercase tracking-widest">
                 {(courseTr?.title ?? "").slice(0, 2)}

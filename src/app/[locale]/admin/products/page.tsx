@@ -1,5 +1,6 @@
 import { requireAdmin } from "@/server/auth";
 import { prisma } from "@/lib/prisma";
+import { getTranslations } from "next-intl/server";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ export default async function AdminProductsPage({
 }) {
   const { locale } = await params;
   await requireAdmin(locale);
+  const te = await getTranslations("enums");
 
   const products = await prisma.product.findMany({
     include: { translations: true },
@@ -50,10 +52,10 @@ export default async function AdminProductsPage({
               return (
                 <tr key={product.id} className="hover:bg-muted/30">
                   <td className="px-4 py-3 font-medium">{tr?.name ?? product.slug}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{product.type}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{te(`productType.${product.type}`)}</td>
                   <td className="px-4 py-3">{formatPrice(product.price, product.currency, locale)}</td>
                   <td className="px-4 py-3">
-                    <Badge variant={statusBadge(product.status)}>{product.status}</Badge>
+                    <Badge variant={statusBadge(product.status)}>{te(`productStatus.${product.status}`)}</Badge>
                   </td>
                   <td className="px-4 py-3">
                     <ActionLink href={`/${locale}/admin/products/${product.id}`} variant="edit" icon="edit" label="Düzenle" />

@@ -34,6 +34,7 @@ export interface MockFreeContent {
   visibility: VisibilityType;
   durationLabel: string;
   coverBg: string;
+  href?: string;
 }
 
 export const mockPrograms: MockProgram[] = [
@@ -92,6 +93,7 @@ export const mockFreeContent: MockFreeContent[] = [
     visibility: "PUBLIC",
     durationLabel: "14 dk",
     coverBg: "bg-orange-800",
+    href: "/courses/meta-reklamcilik-temelleri",
   },
   {
     id: "mock-free-2",
@@ -102,6 +104,7 @@ export const mockFreeContent: MockFreeContent[] = [
     visibility: "REGISTERED",
     durationLabel: "22 dk",
     coverBg: "bg-slate-700",
+    href: "/courses/meta-reklamcilik-temelleri",
   },
   {
     id: "mock-free-3",
@@ -112,5 +115,6 @@ export const mockFreeContent: MockFreeContent[] = [
     visibility: "ENTITLED",
     durationLabel: "38 dk",
     coverBg: "bg-zinc-800",
+    href: "/courses/meta-reklamcilik-temelleri",
   },
 ];
