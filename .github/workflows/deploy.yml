@@ -89,13 +89,29 @@ jobs:
     environment: production
 
     steps:
+      - name: Validate secrets
+        run: |
+          if [ -z "${{ secrets.DEPLOY_HOST }}" ]; then echo "❌ DEPLOY_HOST secret is missing" && exit 1; fi
+          if [ -z "${{ secrets.DEPLOY_USER }}" ]; then echo "❌ DEPLOY_USER secret is missing" && exit 1; fi
+          if [ -z "${{ secrets.DEPLOY_SSH_KEY }}" ]; then echo "❌ DEPLOY_SSH_KEY secret is missing" && exit 1; fi
+          echo "✅ DEPLOY_HOST: configured"
+          echo "✅ DEPLOY_USER: configured"
+          echo "✅ DEPLOY_SSH_KEY: configured ($(echo '${{ secrets.DEPLOY_SSH_KEY }}' | wc -c) chars)"
+
+      - name: SSH smoke test
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: whoami && hostname && uptime
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
-          key_format: base64
           script: |
             cd /opt/ferhatacademy
             echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
