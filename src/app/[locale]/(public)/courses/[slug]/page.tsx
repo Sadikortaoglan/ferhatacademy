@@ -41,6 +41,15 @@ export default async function PublicCourseDetailPage({
     ? await canAccessCourse(session.user.id, course.id)
     : false;
 
+  // Find the published product linked to this course to determine purchaseMode
+  const linkedProduct = await prisma.product.findFirst({
+    where: {
+      status: "PUBLISHED",
+      grants: { some: { resourceId: course.id } },
+    },
+    select: { purchaseMode: true, price: true, currency: true },
+  });
+
   const courseTr = course.translations.find((tr) => tr.locale === locale) ?? course.translations[0];
   const totalLessons = course.modules.reduce((sum, m) => sum + m.lessons.length, 0);
 
@@ -75,11 +84,18 @@ export default async function PublicCourseDetailPage({
             <Button size="lg" variant="outline" disabled>Kayıt Kapalı</Button>
           ) : session?.user ? (
             <Button size="lg" variant="outline" disabled>{t("noAccess")}</Button>
-          ) : (
-            <Link href={`/${locale}/login`}>
-              <Button size="lg">{t("loginToAccess")}</Button>
-            </Link>
-          )}
+          ) : (() => {
+            const mode = linkedProduct?.purchaseMode ?? "DIRECT_PURCHASE";
+            const label =
+              mode === "INVITE_ONLY" ? "Sadece Davetiyeyle" :
+              mode === "APPLICATION_REQUIRED" || mode === "APPLICATION_REQUIRED_BEFORE_PURCHASE" || mode === "APPLICATION_OPTIONAL" ? "Başvur" :
+              "Satın Al";
+            return (
+              <Link href={`/${locale}/login`}>
+                <Button size="lg">{label}</Button>
+              </Link>
+            );
+          })()}
         </div>
         <div className="aspect-video rounded-xl overflow-hidden bg-muted">
           {course.coverImageUrl ? (() => {
