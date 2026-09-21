@@ -111,7 +111,7 @@ function AddItemForm({
   availableLessons: Props["availableLessons"];
   locale: string;
   onAdded: (item: AssignmentItem) => void;
-) {
+}) {
   const te = useTranslations("enums");
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);

@@ -4,8 +4,13 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Role } from "@prisma/client";
 import { createAuditLog } from "@/server/audit";
-import { materializeProductGrants, formatOrderReference } from "@/server/commerce";
+import { materializeProductGrants, formatOrderReference, formatPrice } from "@/server/commerce";
 import { revalidatePath } from "next/cache";
+import {
+  sendPaymentReceivedToCustomer,
+  sendPaymentNotificationToAdmin,
+  sendPaymentApprovedToCustomer,
+} from "@/lib/email";
 
 async function getSessionUser() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -118,6 +123,37 @@ export async function reportPayment(orderId: string, data: { method: string; tra
   await prisma.order.update({ where: { id: orderId }, data: { status: "PAYMENT_REVIEW" } });
   await createAuditLog({ action: "PAYMENT_REPORTED", actorId: sessionUser.id, targetId: payment.id, targetType: "Payment" });
   revalidatePath("/[locale]/dashboard/purchases", "page");
+
+  // Mail bildirimleri (hata olursa sessizce geç)
+  try {
+    const orderWithItems = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { items: { take: 1 }, user: true },
+    });
+    if (orderWithItems) {
+      const productName = orderWithItems.items[0]?.productNameSnapshot ?? "";
+      const amountStr = formatPrice(orderWithItems.totalAmount, orderWithItems.currency, "tr");
+      await Promise.all([
+        sendPaymentReceivedToCustomer({
+          to: orderWithItems.user.email,
+          name: orderWithItems.user.name ?? "",
+          orderReference: orderWithItems.reference,
+          productName,
+          amount: amountStr,
+          locale: "tr",
+        }),
+        sendPaymentNotificationToAdmin({
+          customerName: orderWithItems.user.name ?? "",
+          customerEmail: orderWithItems.user.email,
+          orderReference: orderWithItems.reference,
+          productName,
+          amount: amountStr,
+        }),
+      ]);
+    }
+  } catch {
+    // Mail hatası işlemi engellemesin
+  }
 }
 
 export async function adminApprovePayment(paymentId: string) {
@@ -131,6 +167,25 @@ export async function adminApprovePayment(paymentId: string) {
   await materializeProductGrants(payment.orderId, admin.id);
   revalidatePath("/[locale]/admin/payments", "page");
   revalidatePath("/[locale]/admin/orders", "page");
+
+  // Müşteriye onay maili (hata olursa sessizce geç)
+  try {
+    const order = await prisma.order.findUnique({
+      where: { id: payment.orderId },
+      include: { items: { take: 1 }, user: true },
+    });
+    if (order) {
+      await sendPaymentApprovedToCustomer({
+        to: order.user.email,
+        name: order.user.name ?? "",
+        orderReference: order.reference,
+        productName: order.items[0]?.productNameSnapshot ?? "",
+        locale: "tr",
+      });
+    }
+  } catch {
+    // Mail hatası işlemi engellemesin
+  }
 }
 
 export async function adminRejectPayment(paymentId: string, note: string) {
