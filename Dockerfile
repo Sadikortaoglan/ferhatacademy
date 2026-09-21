@@ -1,10 +1,10 @@
 FROM node:22-alpine AS base
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@12.4.2 --activate
 
 # ── deps ────────────────────────────────────────────────────────────────────
 FROM base AS deps
 WORKDIR /app
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY prisma ./prisma
 RUN pnpm install --frozen-lockfile
 
@@ -13,9 +13,11 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-
-# Prisma generate is part of the build script
-RUN pnpm build
+# Generate Prisma client and build Next.js
+RUN pnpm exec prisma generate && pnpm exec next build
+# Copy generated prisma client to a known flat location for the runner
+RUN mkdir -p /prisma-client && \
+    find node_modules -name ".prisma" -type d | head -1 | xargs -I{} cp -r {} /prisma-client/
 
 # ── runner ──────────────────────────────────────────────────────────────────
 FROM base AS runner
@@ -32,10 +34,10 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Prisma client + schema (needed at runtime for migrations)
-COPY --from=builder /app/node_modules/.prisma          ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma          ./node_modules/@prisma
-COPY --from=builder /app/prisma                        ./prisma
+# Prisma client + schema (needed at runtime)
+COPY --from=builder /prisma-client                   ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma        ./node_modules/@prisma
+COPY --from=builder /app/prisma                      ./prisma
 
 USER nextjs
 
