@@ -104,7 +104,7 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
-          script: whoami && hostname && docker-compose --version
+          script: whoami && hostname && docker compose version
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
@@ -119,14 +119,15 @@ jobs:
             echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
             # Verify compose config only touches Ferhat Academy
-            docker-compose -p ferhatacademy -f /opt/ferhatacademy/docker-compose.yml config > /dev/null
+            docker compose -p ferhatacademy -f /opt/ferhatacademy/docker-compose.yml config > /dev/null
 
             # Check existing production containers are alive
             docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
 
             # Pull and start Ferhat Academy only
-            docker-compose -p ferhatacademy -f /opt/ferhatacademy/docker-compose.yml pull
-            docker-compose -p ferhatacademy -f /opt/ferhatacademy/docker-compose.yml up -d
+            docker compose -p ferhatacademy -f /opt/ferhatacademy/docker-compose.yml pull
+            docker rm -f ferhatacademy-web 2>/dev/null || true
+            docker compose -p ferhatacademy -f /opt/ferhatacademy/docker-compose.yml up -d
 
             # Wait for health (retry 20x / 3s = 60s)
             echo "Waiting for health check..."
