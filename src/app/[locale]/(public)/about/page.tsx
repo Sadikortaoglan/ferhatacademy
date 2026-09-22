@@ -160,8 +160,8 @@ export default async function AboutPage({
               {TIMELINE.map((item) => (
                 <div key={item.year} className="relative flex gap-6 items-start">
                   <div
-                    className="shrink-0 h-12 w-12 rounded-full flex items-center justify-center shadow-lg z-10"
-                    style={{ backgroundColor: COLOR_MAP[item.color] ?? item.color }}
+                    className={`shrink-0 h-12 w-12 rounded-full flex items-center justify-center shadow-lg z-10 ${COLOR_MAP[item.color] ? "" : item.color}`}
+                    style={COLOR_MAP[item.color] ? { backgroundColor: COLOR_MAP[item.color] } : undefined}
                   >
                     <span className="text-xs font-black text-white">{item.year.slice(2)}</span>
                   </div>
