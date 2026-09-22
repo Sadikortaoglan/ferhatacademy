@@ -21,7 +21,7 @@ export const auth = betterAuth({
   },
   plugins: [
     admin({
-      // Better Auth admin plugin: provides banUser/unbanUser + session rejection for banned users
+      defaultRole: "USER",
       bannedUserMessage: "Hesabınız şu anda aktif değil. Destek ekibiyle iletişime geçebilirsiniz.",
     }),
   ],
