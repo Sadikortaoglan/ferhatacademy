@@ -1,6 +1,17 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 
+const COLOR_MAP: Record<string, string> = {
+  blue: "#3b82f6",
+  purple: "#a855f7",
+  green: "#22c55e",
+  orange: "#f97316",
+  amber: "#f59e0b",
+  yellow: "#eab308",
+  red: "#ef4444",
+  pink: "#ec4899",
+};
+
 async function getAboutData() {
   const keys = [
     "instagramUrl", "youtubeUrl", "linkedinUrl", "twitterUrl",
@@ -148,7 +159,10 @@ export default async function AboutPage({
             <div className="space-y-10">
               {TIMELINE.map((item) => (
                 <div key={item.year} className="relative flex gap-6 items-start">
-                  <div className={`shrink-0 h-12 w-12 rounded-full ${item.color} flex items-center justify-center shadow-lg z-10`}>
+                  <div
+                    className="shrink-0 h-12 w-12 rounded-full flex items-center justify-center shadow-lg z-10"
+                    style={{ backgroundColor: COLOR_MAP[item.color] ?? item.color }}
+                  >
                     <span className="text-xs font-black text-white">{item.year.slice(2)}</span>
                   </div>
                   <div className="pt-1 pb-2">
