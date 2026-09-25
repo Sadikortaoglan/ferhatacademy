@@ -67,3 +67,88 @@
   background-color: var(--color-dark-surface);
   color: var(--color-dark-foreground);
 }
+
+/* .hero-dark — for pages that hardcoded a dark hero bg, now theme-aware */
+.hero-dark {
+  background-color: var(--color-dark-bg);
+  color: var(--color-dark-foreground);
+}
+
+/* ── Per-theme dark section fine-tuning ── */
+[data-theme="signature"] .section-dark,
+[data-theme="signature"] .hero-dark {
+  background-color: #050505;
+}
+[data-theme="signature"] .section-dark-surface {
+  background-color: #0f0e0d;
+}
+[data-theme="academy"] .section-dark,
+[data-theme="academy"] .hero-dark {
+  background-color: #0f1a2e;
+}
+[data-theme="academy"] .section-dark-surface {
+  background-color: #162033;
+}
+[data-theme="editorial"] .section-dark,
+[data-theme="editorial"] .hero-dark {
+  background-color: #1a1714;
+}
+[data-theme="editorial"] .section-dark-surface {
+  background-color: #2a241f;
+}
+
+/* ── Per-theme typography ── */
+[data-theme="signature"] h1,
+[data-theme="signature"] h2 {
+  letter-spacing: -0.04em;
+  font-weight: 900;
+}
+[data-theme="signature"] h3 {
+  letter-spacing: -0.02em;
+}
+
+[data-theme="academy"] h1,
+[data-theme="academy"] h2 {
+  letter-spacing: -0.015em;
+  font-weight: 800;
+}
+[data-theme="academy"] h3 {
+  letter-spacing: -0.01em;
+  font-weight: 700;
+}
+
+[data-theme="editorial"] h1,
+[data-theme="editorial"] h2 {
+  letter-spacing: -0.035em;
+  font-weight: 900;
+}
+[data-theme="editorial"] h3 {
+  letter-spacing: -0.02em;
+  font-weight: 800;
+}
+
+/* ── Per-theme card treatment ── */
+[data-theme="signature"] .card-themed {
+  box-shadow: none;
+  border-color: #2e2c29;
+}
+[data-theme="signature"] .card-themed:hover {
+  box-shadow: 0 0 0 1px rgba(249,115,22,0.2);
+  border-color: rgba(249,115,22,0.3);
+}
+
+[data-theme="academy"] .card-themed {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04);
+}
+[data-theme="academy"] .card-themed:hover {
+  box-shadow: 0 4px 16px rgba(15,76,129,0.12), 0 1px 4px rgba(0,0,0,0.08);
+}
+
+[data-theme="editorial"] .card-themed {
+  box-shadow: none;
+  border-radius: 0 !important;
+  border-width: 2px;
+}
+[data-theme="editorial"] .card-themed:hover {
+  border-color: #c8351f;
+}

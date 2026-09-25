@@ -16,6 +16,9 @@ import {
   Menu,
   X,
   ScrollText,
+  Globe,
+  Palette,
+  FileText,
 } from "lucide-react";
 
 const getNavItems = (locale: string) => [
@@ -23,8 +26,12 @@ const getNavItems = (locale: string) => [
   { href: `/${locale}/admin/users`, label: "admin.users", icon: Users, exact: false },
   { href: `/${locale}/admin/courses`, label: "admin.courses", icon: BookOpen, exact: false },
   { href: `/${locale}/admin/assignments`, label: "admin.assignments", icon: ClipboardList, exact: false },
+  { href: `/${locale}/admin/applications`, label: "admin.applications", icon: FileText, exact: false },
+  { href: `/${locale}/admin/applications/templates`, label: "admin.formTemplates", icon: FileText, exact: false },
   { href: `/${locale}/admin/access`, label: "admin.access", icon: ShieldCheck, exact: false },
   { href: `/${locale}/admin/audit`, label: "admin.auditLog", icon: ScrollText, exact: false },
+  { href: `/${locale}/admin/website/navigation`, label: "admin.navigation", icon: Globe, exact: false },
+  { href: `/${locale}/admin/website/appearance`, label: "admin.appearance", icon: Palette, exact: false },
   { href: `/${locale}/admin/settings`, label: "admin.settings", icon: Settings, exact: false },
 ];
 

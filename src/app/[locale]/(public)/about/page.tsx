@@ -66,7 +66,7 @@ export default async function AboutPage({
   return (
     <>
       {/* Hero */}
-      <section className="relative overflow-hidden bg-[#0f0f0f] px-4 py-20 sm:py-28">
+      <section className="hero-dark relative overflow-hidden px-4 py-20 sm:py-28">
         {/* Gradient orbs */}
         <div className="pointer-events-none absolute -top-32 -left-32 h-96 w-96 rounded-full bg-primary/20 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-16 right-0 h-72 w-72 rounded-full bg-amber-500/10 blur-3xl" />
@@ -228,7 +228,7 @@ export default async function AboutPage({
       )}
 
       {/* CTA */}
-      <section className="relative overflow-hidden bg-[#0f0f0f] px-4 py-16 sm:py-20 text-center">
+      <section className="hero-dark relative overflow-hidden px-4 py-16 sm:py-20 text-center">
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent" />
         <div className="relative max-w-2xl mx-auto space-y-6">
           <h2 className="text-3xl sm:text-4xl font-black text-white">Birlikte çalışalım</h2>

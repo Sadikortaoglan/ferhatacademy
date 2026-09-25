@@ -21,7 +21,7 @@ export function CourseCard({ course, locale }: CourseCardProps) {
   return (
     <Link
       href={`/${locale}/courses/${course.slug}`}
-      className="group block rounded-xl overflow-hidden border border-border bg-surface hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5"
+      className="card-themed group block rounded-xl overflow-hidden border border-border bg-surface hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5"
     >
       <div className="aspect-video w-full bg-muted relative overflow-hidden">
         {course.coverImageUrl ? (

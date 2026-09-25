@@ -97,6 +97,55 @@ enum ApplicationStatus {
   CANCELLED
 }
 
+enum QuestionType {
+  SHORT_TEXT
+  LONG_TEXT
+  PHONE
+  EMAIL
+  NUMBER
+  SINGLE_SELECT
+  MULTI_SELECT
+  RADIO
+  CHECKBOX
+}
+
+enum QuestionSection {
+  BASIC_INFO
+  CURRENT_SITUATION
+  GOALS
+  CHALLENGES
+  PROGRAM_FIT
+  AVAILABILITY
+  ADDITIONAL_INFO
+}
+
+enum ApplicationLayout {
+  SPLIT
+  FORM_FIRST
+  EDITORIAL
+}
+
+enum ApplicationBlockType {
+  PROGRAM_VISUAL
+  MOTIVATION
+  TARGET_AUDIENCE
+  NOT_FOR_YOU
+  BENEFITS
+  INCLUSIONS
+  PROCESS
+  FAQ
+  REASSURANCE
+  OPTIONAL_INSTRUCTOR
+}
+
+enum FormTemplateType {
+  MENTORSHIP
+  LIVE_TRAINING
+  CONSULTATION
+  COHORT_PREMIUM_PROGRAM
+  GENERAL_CUSTOM
+}
+
 enum OrderStatus {
   PENDING_PAYMENT
   PAYMENT_REVIEW
@@ -206,6 +255,7 @@ model User {
   applicationsReviewed Application[]     @relation("ApplicationReviewedBy")
   orders               Order[]
   paymentsApproved     Payment[]         @relation("PaymentApprovedBy")
+  pageOverridesUpdated PageAppearanceOverride[] @relation("PageOverrideUpdatedBy")
 
   @@map("users")
 }
@@ -462,12 +512,17 @@ model Product {
   updatedAt      DateTime      @updatedAt
   publishedAt    DateTime?
 
+  formTemplateId String?
+  pageProfileId  String?
+
   translations ProductTranslation[]
   inclusions   ProductInclusion[]
   grants       ProductGrant[]
   applications Application[]
   orderItems   OrderItem[]
-  linkedCourse Course?              @relation(fields: [linkedCourseId], references: [id])
+  linkedCourse  Course?                  @relation(fields: [linkedCourseId], references: [id])
+  formTemplate  ApplicationFormTemplate? @relation("ProductFormTemplate", fields: [formTemplateId], references: [id])
+  pageProfile   ApplicationPageProfile?  @relation("ProductPageProfile", fields: [pageProfileId], references: [id])
 
   @@map("products")
 }
@@ -534,15 +589,165 @@ model Application {
   internalAdminNote String?
   reviewedAt        DateTime?
   reviewedById      String?
+  templateId        String?
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
 
-  user       User    @relation("ApplicationUser", fields: [userId], references: [id], onDelete: Cascade)
-  product    Product @relation(fields: [productId], references: [id])
-  reviewedBy User?   @relation("ApplicationReviewedBy", fields: [reviewedById], references: [id])
+  user       User                     @relation("ApplicationUser", fields: [userId], references: [id], onDelete: Cascade)
+  product    Product                  @relation(fields: [productId], references: [id])
+  reviewedBy User?                    @relation("ApplicationReviewedBy", fields: [reviewedById], references: [id])
+  template   ApplicationFormTemplate? @relation("ApplicationTemplate", fields: [templateId], references: [id])
+  response   ApplicationResponse?
 
   @@unique([userId, productId])
   @@map("applications")
+}
+
+model ApplicationFormTemplate {
+  id        String           @id @default(cuid())
+  key       String           @unique
+  type      FormTemplateType @default(GENERAL_CUSTOM)
+  nameTr    String
+  nameEn    String
+  archived  Boolean          @default(false)
+  version   Int              @default(1)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  questions    ApplicationQuestion[]
+  products     Product[]             @relation("ProductFormTemplate")
+  applications Application[]         @relation("ApplicationTemplate")
+
+  @@map("application_form_templates")
+}
+
+model ApplicationQuestion {
+  id            String          @id @default(cuid())
+  templateId    String
+  key           String
+  type          QuestionType
+  section       QuestionSection @default(ADDITIONAL_INFO)
+  labelTr       String
+  labelEn       String
+  helperTr      String?
+  helperEn      String?
+  placeholderTr String?
+  placeholderEn String?
+  required      Boolean         @default(false)
+  active        Boolean         @default(true)
+  position      Int             @default(0)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  template ApplicationFormTemplate      @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  options  ApplicationQuestionOption[]
+
+  @@unique([templateId, key])
+  @@map("application_questions")
+}
+
+model ApplicationQuestionOption {
+  id         String   @id @default(cuid())
+  questionId String
+  key        String
+  labelTr    String
+  labelEn    String
+  position   Int      @default(0)
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  question ApplicationQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([questionId, key])
+  @@map("application_question_options")
+}
+
+model ApplicationPageProfile {
+  id               String            @id @default(cuid())
+  key              String            @unique
+  headlineTr       String
+  headlineEn       String
+  subtitleTr       String?
+  subtitleEn       String?
+  programVisualUrl String?
+  motivationTr     String?
+  motivationEn     String?
+  ctaLabelTr       String            @default("Başvur")
+  ctaLabelEn       String            @default("Apply")
+  layout           ApplicationLayout @default(SPLIT)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  blocks       ApplicationPageBlock[]
+  faqItems     ApplicationPageFaqItem[]
+  processSteps ApplicationPageProcessStep[]
+  products     Product[]                    @relation("ProductPageProfile")
+
+  @@map("application_page_profiles")
+}
+
+model ApplicationPageBlock {
+  id          String               @id @default(cuid())
+  profileId   String
+  type        ApplicationBlockType
+  enabled     Boolean              @default(true)
+  position    Int                  @default(0)
+  contentJson Json                 @default("{}")
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  profile ApplicationPageProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@map("application_page_blocks")
+}
+
+model ApplicationPageFaqItem {
+  id         String   @id @default(cuid())
+  profileId  String
+  questionTr String
+  questionEn String
+  answerTr   String
+  answerEn   String
+  position   Int      @default(0)
+  enabled    Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  profile ApplicationPageProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@map("application_page_faq_items")
+}
+
+model ApplicationPageProcessStep {
+  id        String   @id @default(cuid())
+  profileId String
+  titleTr   String
+  titleEn   String
+  descTr    String?
+  descEn    String?
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  profile ApplicationPageProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@map("application_page_process_steps")
+}
+
+model ApplicationResponse {
+  id              String   @id @default(cuid())
+  applicationId   String   @unique
+  templateId      String?
+  templateVersion Int?
+  responsesJson   Json
+  snapshotJson    Json
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@map("application_responses")
 }
 
 model Order {
@@ -600,4 +805,45 @@ model Payment {
   approvedBy User? @relation("PaymentApprovedBy", fields: [approvedById], references: [id])
 
   @@map("payments")
+}
+
+model SiteAppearance {
+  id              String   @id @default(cuid())
+  activeTheme     String   @default("signature")
+  globalOverrides Json     @default("{}")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("site_appearances")
+}
+
+model PageAppearanceOverride {
+  id          String   @id @default(cuid())
+  pageKey     String   @unique
+  overrides   Json     @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  updatedById String?
+
+  updatedBy User? @relation("PageOverrideUpdatedBy", fields: [updatedById], references: [id])
+
+  @@map("page_appearance_overrides")
+}
+
+model NavItem {
+  id           String   @id @default(cuid())
+  key          String   @unique
+  labelTr      String
+  labelEn      String
+  href         String
+  position     Int
+  enabled      Boolean  @default(true)
+  showInNavbar Boolean  @default(true)
+  showInFooter Boolean  @default(false)
+  openInNewTab Boolean  @default(false)
+  icon         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("nav_items")
 }

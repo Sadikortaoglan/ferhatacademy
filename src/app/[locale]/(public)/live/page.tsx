@@ -59,7 +59,7 @@ export default async function LivePage({ params }: { params: Promise<{ locale: s
   return (
     <>
       {/* ── HERO ── */}
-      <section className="relative overflow-hidden bg-[#0f0f0f] px-4 pt-16 pb-20 sm:pt-20 sm:pb-28">
+      <section className="hero-dark relative overflow-hidden px-4 pt-16 pb-20 sm:pt-20 sm:pb-28">
         <div className="pointer-events-none absolute -top-40 -left-40 h-[500px] w-[500px] rounded-full bg-primary/15 blur-[100px]" />
         <div className="pointer-events-none absolute -bottom-20 right-0 h-80 w-80 rounded-full bg-amber-500/10 blur-[80px]" />
 
@@ -333,7 +333,7 @@ export default async function LivePage({ params }: { params: Promise<{ locale: s
       </section>
 
       {/* ── PERSONAL VALUE SECTION ── */}
-      <section className="bg-[#0f0f0f] px-4 py-16 sm:py-20">
+      <section className="hero-dark px-4 py-16 sm:py-20">
         <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-10 items-center">
           <div className="space-y-5">
             <h2 className="text-2xl sm:text-3xl font-black text-white">
