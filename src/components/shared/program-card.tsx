@@ -27,7 +27,7 @@ export function ProgramCard({ program, locale, href }: ProgramCardProps) {
   return (
     <Link
       href={target}
-      className="group block rounded-xl overflow-hidden border border-border bg-surface hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5"
+      className="card-themed group block rounded-xl overflow-hidden border border-border bg-surface hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5"
     >
       {/* Cover area */}
       <div

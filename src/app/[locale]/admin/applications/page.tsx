@@ -1,5 +1,6 @@
 import { requireAdmin } from "@/server/auth";
 import { prisma } from "@/lib/prisma";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { ApplicationStatusButtons } from "@/features/commerce/components/application-status-buttons";
 
@@ -54,7 +55,15 @@ export default async function AdminApplicationsPage({
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{new Date(app.createdAt).toLocaleDateString()}</td>
                   <td className="px-4 py-3">
-                    <ApplicationStatusButtons appId={app.id} currentStatus={app.status} />
+                    <div className="flex items-center gap-3">
+                      <ApplicationStatusButtons appId={app.id} currentStatus={app.status} />
+                      <Link
+                        href={`/${locale}/admin/applications/${app.id}`}
+                        className="text-xs text-primary hover:underline"
+                      >
+                        Detay
+                      </Link>
+                    </div>
                   </td>
                 </tr>
               );

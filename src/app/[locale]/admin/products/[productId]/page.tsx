@@ -5,6 +5,7 @@ import { getTranslations } from "next-intl/server";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "@/server/commerce";
 import { PublishProductButton, ArchiveProductButton } from "@/features/commerce/components/product-admin-buttons";
+import { ApplicationConfig } from "./application-config";
 
 export default async function AdminProductDetailPage({
   params,
@@ -15,14 +16,23 @@ export default async function AdminProductDetailPage({
   await requireAdmin(locale);
   const te = await getTranslations("enums");
 
-  const product = await prisma.product.findUnique({
-    where: { id: productId },
-    include: {
-      translations: true,
-      inclusions: { orderBy: { position: "asc" } },
-      grants: true,
-    },
-  });
+  const [product, templates, profiles] = await Promise.all([
+    prisma.product.findUnique({
+      where: { id: productId },
+      include: {
+        translations: true,
+        inclusions: { orderBy: { position: "asc" } },
+        grants: true,
+      },
+    }),
+    prisma.applicationFormTemplate.findMany({
+      where: { archived: false },
+      select: { id: true, key: true, nameTr: true, archived: true },
+    }),
+    prisma.applicationPageProfile.findMany({
+      select: { id: true, key: true, headlineTr: true },
+    }),
+  ]);
   if (!product) notFound();
 
   const tr = product.translations.find((t) => t.locale === locale) ?? product.translations[0];
@@ -90,6 +100,19 @@ export default async function AdminProductDetailPage({
           {product.status !== "PUBLISHED" && <PublishProductButton productId={product.id} />}
           {product.status === "PUBLISHED" && <ArchiveProductButton productId={product.id} />}
         </div>
+      </div>
+
+      <div className="border border-border rounded-xl p-5 bg-surface space-y-3">
+        <h2 className="font-bold">Başvuru Ayarları</h2>
+        <ApplicationConfig
+          locale={locale}
+          productId={product.id}
+          purchaseMode={product.purchaseMode}
+          currentTemplateId={product.formTemplateId ?? null}
+          currentProfileId={product.pageProfileId ?? null}
+          templates={templates}
+          profiles={profiles}
+        />
       </div>
     </div>
   );
