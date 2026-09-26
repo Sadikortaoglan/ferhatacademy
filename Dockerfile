@@ -7,6 +7,11 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY prisma ./prisma
 RUN pnpm install --frozen-lockfile
+# Resolve @prisma/engines from pnpm's nested store to a flat location
+# so it can be COPY'd into the runner stage without broken symlinks.
+RUN mkdir -p /prisma-engines && \
+    find /app/node_modules -path "*/@prisma/engines" -type d | head -1 | \
+    xargs -I{} cp -rL {} /prisma-engines/
 
 # ── builder ─────────────────────────────────────────────────────────────────
 FROM base AS builder
@@ -41,6 +46,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Prisma client + CLI + schema (needed at runtime + migrations)
 COPY --from=builder /prisma-client                   ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma        ./node_modules/@prisma
+COPY --from=deps    /prisma-engines                  ./node_modules/@prisma/engines
 COPY --from=builder /app/node_modules/prisma         ./node_modules/prisma
 COPY --from=builder /app/node_modules/.bin/prisma    ./node_modules/.bin/prisma
 COPY --from=builder /app/prisma                      ./prisma
