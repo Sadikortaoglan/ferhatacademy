@@ -16,9 +16,7 @@ CREATE TYPE "FormTemplateType" AS ENUM ('MENTORSHIP', 'LIVE_TRAINING', 'CONSULTA
 -- AlterTable
 ALTER TABLE "applications" ADD COLUMN     "templateId" TEXT;
 
--- AlterTable
-ALTER TABLE "page_appearance_overrides" ALTER COLUMN "updatedAt" DROP DEFAULT;
-
+-- AlterTable (page_appearance_overrides created in later migration; this line is intentionally omitted)
 -- AlterTable
 ALTER TABLE "products" ADD COLUMN     "formTemplateId" TEXT,
 ADD COLUMN     "pageProfileId" TEXT;

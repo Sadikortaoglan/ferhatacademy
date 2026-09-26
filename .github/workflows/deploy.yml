@@ -116,7 +116,9 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
             set -e
-            COMPOSE="docker-compose -p ferhatacademy -f /opt/ferhatacademy/docker-compose.yml"
+            # Use docker compose v2 (plugin) — docker-compose v1 (Python 1.29.2) has
+            # a ContainerConfig bug with newer OCI image formats.
+            COMPOSE="docker compose -p ferhatacademy -f /opt/ferhatacademy/docker-compose.yml"
 
             # ── 1. Verify pre-deploy state ─────────────────────────────────
             echo "=== Pre-deploy containers ==="
@@ -139,14 +141,19 @@ jobs:
             fi
             echo "✅ Target database: $DB_HOST"
 
-            # ── 6. Run Prisma migration via Compose web service ────────────
-            # Uses the configured DATABASE_URL from .env, correct network, no manual image ref
-            # prisma migrate deploy is idempotent — exits 0 if nothing is pending
+            # ── 6. Run Prisma migration via node:22-alpine ─────────────────
+            # Uses node:22-alpine (always has npm) — no dependency on whether the
+            # app image includes prisma CLI. Mounts /opt/ferhatacademy/prisma from
+            # the server so migration files are always up-to-date from git deploys.
+            # prisma migrate deploy is idempotent — exits 0 if nothing is pending.
             echo "Running database migrations..."
-            $COMPOSE run --rm --no-deps \
-              -e HOSTNAME=migration \
-              web \
-              sh -c "node_modules/.bin/prisma migrate deploy --schema=prisma/schema.prisma"
+            DB_URL=$(grep "^DATABASE_URL" /opt/ferhatacademy/.env | sed 's/^DATABASE_URL=//;s/^"//;s/"$//')
+            docker run --rm \
+              --network ferhatacademy_net \
+              -e DATABASE_URL="$DB_URL" \
+              -v /opt/ferhatacademy/prisma:/prisma \
+              node:22-alpine \
+              sh -c "cd /tmp && npm install prisma@6.19.3 --quiet 2>&1 | tail -1 && ./node_modules/.bin/prisma migrate deploy --schema=/prisma/schema.prisma"
             echo "✅ Migrations done"
 
             # ── 7. Update only the web service (postgres stays unchanged) ──
