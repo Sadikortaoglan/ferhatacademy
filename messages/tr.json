@@ -347,7 +347,8 @@
     "clearFilters": "Temizle",
     "searchPlaceholder": "Ad veya e-posta ara...",
     "accountBanned": "Bu hesap pasifleştirildi.",
-    "banReason": "Sebep"
+    "banReason": "Sebep",
+    "appProfiles": "Başvuru Sayfaları"
   },
   "errors": {
     "notFound": "Sayfa bulunamadı",
@@ -402,5 +403,53 @@
     "privacy": "Gizlilik Politikası",
     "terms": "Kullanım Koşulları",
     "copyright": "Tüm hakları saklıdır."
+  },
+  "applications": {
+    "title": "Başvurularım",
+    "empty": "Henüz başvurunuz bulunmuyor.",
+    "status": {
+      "PENDING": "Beklemede",
+      "UNDER_REVIEW": "İnceleniyor",
+      "APPROVED": "Onaylandı",
+      "REJECTED": "Reddedildi",
+      "CANCELLED": "İptal Edildi",
+      "WAITLISTED": "Bekleme Listesi"
+    },
+    "apply": {
+      "title": "Başvuru",
+      "formTitle": "Başvuru Formu",
+      "requiredNote": "* ile işaretli alanlar zorunludur.",
+      "alreadyApplied": "Başvurunuz Mevcut",
+      "alreadyAppliedDesc": "Bu program için daha önce başvuru yaptınız.",
+      "myApplications": "Başvurularım",
+      "backToProgram": "Programa Dön",
+      "submitting": "Gönderiliyor...",
+      "submit": "Başvur",
+      "nextStep": "Sonraki Adım",
+      "prevStep": "Önceki Adım",
+      "confirmation": {
+        "title": "Başvurunuz Alındı",
+        "desc": "Başvurunuzu aldık, en kısa sürede değerlendirip size geri döneceğiz.",
+        "viewApplications": "Başvurularımı Gör",
+        "backToProgram": "Programa Dön"
+      }
+    },
+    "admin": {
+      "title": "Başvurular",
+      "allApplications": "Tüm Başvurular",
+      "reviewApplication": "Başvuruyu İncele",
+      "applicant": "Başvuran",
+      "program": "Program",
+      "appliedAt": "Başvuru Tarihi",
+      "answers": "Cevaplar",
+      "noAnswers": "Cevap bulunamadı.",
+      "internalNote": "İç Not",
+      "actions": {
+        "approve": "Onayla",
+        "reject": "Reddet",
+        "waitlist": "Bekleme Listesine Al",
+        "review": "İnceleye Al"
+      }
+    }
   }
 }

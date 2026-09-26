@@ -84,6 +84,67 @@ export async function sendPaymentNotificationToAdmin(opts: {
   });
 }
 
+export async function sendApplicationSubmittedToApplicant(opts: {
+  to: string;
+  name: string;
+  productName: string;
+  applicationId: string;
+  locale?: string;
+}) {
+  const resend = getResend();
+  if (!resend) return;
+  const isTr = (opts.locale ?? "tr") === "tr";
+  await resend.emails.send({
+    from: FROM,
+    to: opts.to,
+    subject: isTr
+      ? `Başvurunuz Alındı — ${opts.productName}`
+      : `Application Received — ${opts.productName}`,
+    html: isTr
+      ? `
+<div style="font-family:sans-serif;max-width:560px;margin:0 auto">
+  <h2 style="color:#f97316">Başvurunuz Alındı 🎉</h2>
+  <p>Merhaba ${opts.name},</p>
+  <p><strong>${opts.productName}</strong> programı için başvurunuzu aldık. En kısa sürede değerlendirip size geri döneceğiz.</p>
+  <a href="${BASE_URL}/tr/dashboard/applications" style="display:inline-block;background:#f97316;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;margin-top:16px">Başvurularımı Görüntüle →</a>
+  <p style="margin-top:24px;color:#888;font-size:12px">Ferhat Academy</p>
+</div>`
+      : `
+<div style="font-family:sans-serif;max-width:560px;margin:0 auto">
+  <h2 style="color:#f97316">Application Received 🎉</h2>
+  <p>Hello ${opts.name},</p>
+  <p>We've received your application for <strong>${opts.productName}</strong>. We'll review it and get back to you soon.</p>
+  <a href="${BASE_URL}/en/dashboard/applications" style="display:inline-block;background:#f97316;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;margin-top:16px">View My Applications →</a>
+  <p style="margin-top:24px;color:#888;font-size:12px">Ferhat Academy</p>
+</div>`,
+  });
+}
+
+export async function sendApplicationSubmittedToAdmin(opts: {
+  applicantName: string;
+  applicantEmail: string;
+  productName: string;
+  applicationId: string;
+}) {
+  const resend = getResend();
+  if (!resend) return;
+  await resend.emails.send({
+    from: FROM,
+    to: ADMIN_EMAIL,
+    subject: `📋 Yeni Başvuru: ${opts.productName} — ${opts.applicantName}`,
+    html: `
+<div style="font-family:sans-serif;max-width:560px;margin:0 auto">
+  <h2 style="color:#0d1117">Yeni Başvuru Geldi</h2>
+  <table style="width:100%;border-collapse:collapse;margin:16px 0">
+    <tr><td style="padding:8px;color:#666">Başvuran</td><td style="padding:8px;font-weight:bold">${opts.applicantName}</td></tr>
+    <tr><td style="padding:8px;color:#666">E-posta</td><td style="padding:8px">${opts.applicantEmail}</td></tr>
+    <tr><td style="padding:8px;color:#666">Program</td><td style="padding:8px">${opts.productName}</td></tr>
+  </table>
+  <a href="${BASE_URL}/tr/admin/applications/${opts.applicationId}" style="display:inline-block;background:#0d1117;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;margin-top:8px">Başvuruyu İncele →</a>
+</div>`,
+  });
+}
+
 export async function sendPaymentApprovedToCustomer(opts: {
   to: string;
   name: string;

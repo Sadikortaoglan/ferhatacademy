@@ -126,8 +126,22 @@ jobs:
             # Check existing production containers are alive
             docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
 
-            # Pull and start Ferhat Academy only
+            # Pull latest image (contains up-to-date prisma/migrations from the build)
             docker compose -p ferhatacademy -f /opt/ferhatacademy/docker-compose.yml pull
+
+            # Run database migrations — the image includes prisma CLI + migration files
+            # prisma migrate deploy is idempotent: exits 0 when nothing is pending
+            echo "Running database migrations..."
+            docker run --rm \
+              --network ferhatacademy_net \
+              --env-file /opt/ferhatacademy/.env \
+              --entrypoint "" \
+              --user root \
+              ghcr.io/${{ github.repository_owner }}/ferhatacademy:latest \
+              sh -c "node_modules/.bin/prisma migrate deploy --schema=prisma/schema.prisma"
+            echo "✅ Migrations done"
+
+            # Start Ferhat Academy
             docker rm -f ferhatacademy-web 2>/dev/null || true
             docker compose -p ferhatacademy -f /opt/ferhatacademy/docker-compose.yml up -d
 
