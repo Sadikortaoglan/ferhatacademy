@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { requireAdmin } from "@/server/auth";
 import { z } from "zod";
 
@@ -12,10 +13,32 @@ const templateSchema = z.object({
   nameEn: z.string().min(1),
 });
 
+const stepSchema = z.object({
+  stableKey: z.string().min(1).max(60).regex(/^[a-z0-9_]+$/),
+  titleTr: z.string().min(1),
+  titleEn: z.string().min(1),
+  descTr: z.string().optional(),
+  descEn: z.string().optional(),
+  active: z.boolean().default(true),
+  position: z.number().int().default(0),
+});
+
+const conditionRuleSchema = z.object({
+  questionKey: z.string(),
+  operator: z.enum(["EQUALS", "NOT_EQUALS", "CONTAINS", "GREATER_THAN", "LESS_THAN"]),
+  value: z.string(),
+});
+
+const conditionSchema = z.object({
+  rules: z.array(conditionRuleSchema),
+  logic: z.enum(["AND", "OR"]).default("AND"),
+}).nullable();
+
 const questionSchema = z.object({
   key: z.string().min(1).max(60).regex(/^[a-z0-9_]+$/),
-  type: z.enum(["SHORT_TEXT", "LONG_TEXT", "PHONE", "EMAIL", "NUMBER", "SINGLE_SELECT", "MULTI_SELECT", "RADIO", "CHECKBOX"]),
+  type: z.enum(["SHORT_TEXT", "LONG_TEXT", "PHONE", "EMAIL", "NUMBER", "SINGLE_SELECT", "MULTI_SELECT", "RADIO", "CHECKBOX", "BOOLEAN", "CURRENCY_RANGE", "DATE", "TIME_RANGE"]),
   section: z.enum(["BASIC_INFO", "CURRENT_SITUATION", "GOALS", "CHALLENGES", "PROGRAM_FIT", "AVAILABILITY", "ADDITIONAL_INFO"]),
+  stepId: z.string().nullable().optional(),
   labelTr: z.string().min(1),
   labelEn: z.string().min(1),
   helperTr: z.string().optional(),
@@ -25,6 +48,10 @@ const questionSchema = z.object({
   required: z.boolean().default(false),
   active: z.boolean().default(true),
   position: z.number().int().default(0),
+  presentation: z.enum(["STANDARD", "CARDS", "COMPACT_CARDS"]).default("STANDARD"),
+  autoAdvance: z.boolean().default(false),
+  highlightInAdmin: z.boolean().default(false),
+  conditionJson: conditionSchema.optional(),
 });
 
 const optionSchema = z.object({
@@ -113,8 +140,15 @@ export async function addQuestion(locale: string, templateId: string, data: unkn
     _max: { position: true },
   });
   const position = (maxPos._max.position ?? -1) + 1;
+  const { conditionJson, stepId, ...rest } = parsed;
   const question = await prisma.applicationQuestion.create({
-    data: { ...parsed, position, templateId },
+    data: {
+      ...rest,
+      position,
+      templateId,
+      stepId: stepId ?? null,
+      conditionJson: conditionJson === null ? Prisma.DbNull : (conditionJson as object | undefined),
+    },
     include: { options: true },
   });
   revalidatePath(`/${locale}/admin/applications/templates/${templateId}`);
@@ -124,9 +158,15 @@ export async function addQuestion(locale: string, templateId: string, data: unkn
 export async function updateQuestion(locale: string, templateId: string, questionId: string, data: unknown) {
   await requireAdmin(locale);
   const parsed = questionSchema.partial().parse(data);
+  const { conditionJson, stepId, ...rest } = parsed;
+  const updateData: Record<string, unknown> = { ...rest };
+  if (stepId !== undefined) updateData.stepId = stepId;
+  if (conditionJson !== undefined) {
+    updateData.conditionJson = conditionJson === null ? Prisma.DbNull : (conditionJson as object);
+  }
   const q = await prisma.applicationQuestion.update({
     where: { id: questionId },
-    data: parsed,
+    data: updateData,
     include: { options: { orderBy: { position: "asc" } } },
   });
   revalidatePath(`/${locale}/admin/applications/templates/${templateId}`);
@@ -188,5 +228,85 @@ export async function reorderOptions(locale: string, questionId: string, ordered
       prisma.applicationQuestionOption.update({ where: { id }, data: { position: idx } })
     )
   );
+  return { ok: true };
+}
+
+export async function addStep(locale: string, templateId: string, data: unknown) {
+  await requireAdmin(locale);
+  const parsed = stepSchema.parse(data);
+  const maxPos = await prisma.applicationFormStep.aggregate({
+    where: { templateId },
+    _max: { position: true },
+  });
+  const position = parsed.position ?? (maxPos._max.position ?? -1) + 1;
+  const step = await prisma.applicationFormStep.create({
+    data: { ...parsed, position, templateId },
+  });
+  revalidatePath(`/${locale}/admin/applications/templates/${templateId}`);
+  return step;
+}
+
+export async function updateStep(locale: string, templateId: string, stepId: string, data: unknown) {
+  await requireAdmin(locale);
+  const parsed = stepSchema.partial().parse(data);
+  const step = await prisma.applicationFormStep.update({
+    where: { id: stepId },
+    data: parsed,
+  });
+  revalidatePath(`/${locale}/admin/applications/templates/${templateId}`);
+  return step;
+}
+
+export async function deleteStep(locale: string, templateId: string, stepId: string) {
+  await requireAdmin(locale);
+  // Unlink questions from step before deleting
+  await prisma.applicationQuestion.updateMany({
+    where: { stepId },
+    data: { stepId: null },
+  });
+  await prisma.applicationFormStep.delete({ where: { id: stepId } });
+  revalidatePath(`/${locale}/admin/applications/templates/${templateId}`);
+  return { ok: true };
+}
+
+export async function reorderSteps(locale: string, templateId: string, orderedIds: string[]) {
+  await requireAdmin(locale);
+  await Promise.all(
+    orderedIds.map((id, idx) =>
+      prisma.applicationFormStep.update({ where: { id }, data: { position: idx } })
+    )
+  );
+  revalidatePath(`/${locale}/admin/applications/templates/${templateId}`);
+  return { ok: true };
+}
+
+export async function updateQuestionCondition(
+  locale: string,
+  templateId: string,
+  questionId: string,
+  conditionJson: unknown
+) {
+  await requireAdmin(locale);
+  const parsed = conditionSchema.parse(conditionJson);
+  await prisma.applicationQuestion.update({
+    where: { id: questionId },
+    data: { conditionJson: parsed === null ? Prisma.DbNull : (parsed as object) },
+  });
+  revalidatePath(`/${locale}/admin/applications/templates/${templateId}`);
+  return { ok: true };
+}
+
+export async function assignQuestionToStep(
+  locale: string,
+  templateId: string,
+  questionId: string,
+  stepId: string | null
+) {
+  await requireAdmin(locale);
+  await prisma.applicationQuestion.update({
+    where: { id: questionId },
+    data: { stepId },
+  });
+  revalidatePath(`/${locale}/admin/applications/templates/${templateId}`);
   return { ok: true };
 }

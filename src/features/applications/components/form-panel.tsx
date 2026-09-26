@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { DynamicForm, type ApplicationQuestion } from "./dynamic-form";
+import { DynamicForm, type ApplicationQuestion, type ApplicationFormStep } from "./dynamic-form";
 import { LegacyApplicationForm } from "./legacy-form";
 import { ConfirmationState } from "./confirmation-state";
 
@@ -10,9 +10,9 @@ interface Props {
   productSlug: string;
   productName: string;
   locale: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  formTemplate: { questions: ApplicationQuestion[] } | null;
+  formTemplate: { questions: ApplicationQuestion[]; steps: ApplicationFormStep[] } | null;
   ctaLabel?: string;
+  prefillData?: Record<string, string>;
 }
 
 export function ApplicationFormPanel({
@@ -22,6 +22,7 @@ export function ApplicationFormPanel({
   locale,
   formTemplate,
   ctaLabel,
+  prefillData,
 }: Props) {
   const [submitted, setSubmitted] = useState(false);
 
@@ -35,9 +36,11 @@ export function ApplicationFormPanel({
     return (
       <DynamicForm
         questions={formTemplate.questions}
+        steps={formTemplate.steps ?? []}
         productId={productId}
         locale={locale}
         ctaLabel={ctaLabel}
+        prefillData={prefillData}
         onSuccess={() => setSubmitted(true)}
       />
     );

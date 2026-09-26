@@ -29,7 +29,13 @@ export default async function ApplyPage({
   const programName = translation?.name ?? "";
   const programDescription = (translation as { shortDescription?: string | null } | undefined)?.shortDescription ?? "";
 
-  const formTemplate = product.formTemplate ?? null;
+  const formTemplate = product.formTemplate
+    ? {
+        ...product.formTemplate,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        questions: product.formTemplate.questions.map((q) => ({ ...q, conditionJson: q.conditionJson as any })),
+      }
+    : null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const pageProfile = product.pageProfile as Record<string, any> | null ?? null;
 
