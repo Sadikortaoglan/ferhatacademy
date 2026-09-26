@@ -126,27 +126,20 @@ jobs:
             # Check existing production containers are alive
             docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
 
-            # Pull latest image
+            # Pull latest image (contains up-to-date prisma/migrations from the build)
             docker compose -p ferhatacademy -f /opt/ferhatacademy/docker-compose.yml pull
 
-            # Run database migrations before starting the new container
+            # Run database migrations — the image includes prisma CLI + migration files
+            # prisma migrate deploy is idempotent: exits 0 when nothing is pending
             echo "Running database migrations..."
             docker run --rm \
-              --network ferhatacademy_default \
+              --network ferhatacademy_net \
               --env-file /opt/ferhatacademy/.env \
               --entrypoint "" \
+              --user root \
               ghcr.io/${{ github.repository_owner }}/ferhatacademy:latest \
-              node -e "
-                const { execSync } = require('child_process');
-                execSync('node_modules/.bin/prisma migrate deploy || ./node_modules/@prisma/engines/prisma-fmt migrate deploy', { stdio: 'inherit' });
-              " 2>/dev/null || \
-            docker run --rm \
-              --network ferhatacademy_default \
-              --env-file /opt/ferhatacademy/.env \
-              -v /opt/ferhatacademy/prisma:/app/prisma \
-              node:22-alpine \
-              sh -c "npm install prisma@6.19.3 --no-save -q && node_modules/.bin/prisma migrate deploy" || \
-            echo "⚠️  Migration via runner failed, trying direct psql approach..."
+              sh -c "node_modules/.bin/prisma migrate deploy --schema=prisma/schema.prisma"
+            echo "✅ Migrations done"
 
             # Start Ferhat Academy
             docker rm -f ferhatacademy-web 2>/dev/null || true
