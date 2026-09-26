@@ -5,6 +5,10 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import {
+  sendApplicationSubmittedToApplicant,
+  sendApplicationSubmittedToAdmin,
+} from "@/lib/email";
 
 async function getSessionUser() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -62,6 +66,7 @@ export async function submitDynamicApplication(
   const product = await prisma.product.findUnique({
     where: { id: productId },
     include: {
+      translations: { take: 2 },
       formTemplate: {
         include: {
           questions: {
@@ -76,6 +81,11 @@ export async function submitDynamicApplication(
     },
   });
   if (!product) throw new Error("Product not found");
+
+  const productTranslation =
+    (product.translations as { locale: string; name: string }[]).find((t) => t.locale === "tr") ??
+    (product.translations as { locale: string; name: string }[])[0];
+  const productName = productTranslation?.name ?? product.slug;
 
   if (product.formTemplate) {
     const template = product.formTemplate;
@@ -123,6 +133,18 @@ export async function submitDynamicApplication(
     });
 
     revalidatePath("/[locale]/dashboard/applications", "page");
+    void sendApplicationSubmittedToApplicant({
+      to: sessionUser.email,
+      name: sessionUser.name ?? sessionUser.email,
+      productName,
+      applicationId: app.id,
+    }).catch(() => {});
+    void sendApplicationSubmittedToAdmin({
+      applicantName: sessionUser.name ?? sessionUser.email,
+      applicantEmail: sessionUser.email,
+      productName,
+      applicationId: app.id,
+    }).catch(() => {});
     return { ok: true, applicationId: app.id };
   } else {
     // No template — fall back to legacy flat fields
@@ -147,6 +169,18 @@ export async function submitDynamicApplication(
       data: { userId: sessionUser.id, productId, ...parsed },
     });
     revalidatePath("/[locale]/dashboard/applications", "page");
+    void sendApplicationSubmittedToApplicant({
+      to: sessionUser.email,
+      name: sessionUser.name ?? sessionUser.email,
+      productName,
+      applicationId: app.id,
+    }).catch(() => {});
+    void sendApplicationSubmittedToAdmin({
+      applicantName: sessionUser.name ?? sessionUser.email,
+      applicantEmail: sessionUser.email,
+      productName,
+      applicationId: app.id,
+    }).catch(() => {});
     return { ok: true, applicationId: app.id };
   }
 }
