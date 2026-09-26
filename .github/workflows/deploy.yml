@@ -4,6 +4,12 @@ on:
   push:
     branches: [main]
 
+# One production deployment at a time — queue, never cancel a running deploy.
+# Concurrent deploys risk running prisma migrate deploy twice in parallel.
+concurrency:
+  group: ferhatacademy-production
+  cancel-in-progress: false
+
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: sadikortaoglan/ferhatacademy
@@ -11,7 +17,7 @@ env:
 jobs:
   # ── quality gates ──────────────────────────────────────────────────────────
   quality:
-    name: Lint · Typecheck · Build
+    name: Lint · Typecheck · Unit Tests · Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,6 +38,9 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      - name: Unit tests
+        run: pnpm test:unit
+
       - name: Build
         run: pnpm build
         env:
@@ -40,11 +49,37 @@ jobs:
           BETTER_AUTH_URL: https://ferhatacademy.com
           NEXT_PUBLIC_APP_URL: https://ferhatacademy.com
 
+  # ── integration tests ──────────────────────────────────────────────────────
+  integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: quality
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Integration tests (Testcontainers)
+        run: pnpm test:integration
+        env:
+          # Testcontainers starts its own Postgres — DATABASE_URL is overridden
+          # in tests/helpers/prisma.ts. Provide a fallback so Prisma client
+          # generation does not fail if it reads the env early.
+          DATABASE_URL: postgresql://x:x@localhost:5432/x
+
   # ── docker build & push ────────────────────────────────────────────────────
   docker:
     name: Docker → GHCR
     runs-on: ubuntu-latest
-    needs: quality
+    needs: [quality, integration]
     permissions:
       contents: read
       packages: write
@@ -141,19 +176,21 @@ jobs:
             fi
             echo "✅ Target database: $DB_HOST"
 
-            # ── 6. Run Prisma migration via node:22-alpine ─────────────────
-            # Uses node:22-alpine (always has npm) — no dependency on whether the
-            # app image includes prisma CLI. Mounts /opt/ferhatacademy/prisma from
-            # the server so migration files are always up-to-date from git deploys.
-            # prisma migrate deploy is idempotent — exits 0 if nothing is pending.
+            # ── 6. Run Prisma migration using the NEW GHCR image ──────────
+            # The production image already contains:
+            #   node_modules/prisma (CLI), node_modules/.bin/prisma
+            #   node_modules/@prisma (engines: schema-engine for linux-musl)
+            #   prisma/schema.prisma + prisma/migrations/
+            # No npm install on the VPS. Migration runs BEFORE the web
+            # container is replaced — if it fails, exit 1 prevents step 7
+            # and the currently healthy web container keeps serving traffic.
             echo "Running database migrations..."
             DB_URL=$(grep "^DATABASE_URL" /opt/ferhatacademy/.env | sed 's/^DATABASE_URL=//;s/^"//;s/"$//')
             docker run --rm \
               --network ferhatacademy_net \
               -e DATABASE_URL="$DB_URL" \
-              -v /opt/ferhatacademy/prisma:/prisma \
-              node:22-alpine \
-              sh -c "cd /tmp && npm install prisma@6.19.3 --quiet 2>&1 | tail -1 && ./node_modules/.bin/prisma migrate deploy --schema=/prisma/schema.prisma"
+              ghcr.io/sadikortaoglan/ferhatacademy:latest \
+              node node_modules/.bin/prisma migrate deploy --schema=prisma/schema.prisma
             echo "✅ Migrations done"
 
             # ── 7. Update only the web service (postgres stays unchanged) ──

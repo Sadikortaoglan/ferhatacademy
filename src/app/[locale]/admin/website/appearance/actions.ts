@@ -1,7 +1,8 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { SITE_APPEARANCE_TAG } from "@/server/appearance";
 import { requireAdmin } from "@/server/auth";
 import { THEME_CONFIGS, DEFAULT_THEME_ID, type ThemeId } from "@/lib/themes";
 import { validateOverrides, GLOBAL_ONLY_KEYS, type ThemeOverrides } from "@/lib/theme-resolver";
@@ -40,6 +41,7 @@ export async function saveGlobalAppearance(activeTheme: string, globalOverrides:
   } else {
     await prisma.siteAppearance.create({ data: { activeTheme, globalOverrides: safeOverrides as object } });
   }
+  revalidateTag(SITE_APPEARANCE_TAG, { expire: 0 });
   revalidatePath("/", "layout");
   return { ok: true };
 }
@@ -56,6 +58,7 @@ export async function savePageOverride(pageKey: string, overrides: ThemeOverride
     create: { pageKey, overrides: safeOverrides as object },
     update: { overrides: safeOverrides as object },
   });
+  revalidateTag(SITE_APPEARANCE_TAG, { expire: 0 });
   revalidatePath("/", "layout");
   return { ok: true };
 }
@@ -64,6 +67,7 @@ export async function deletePageOverride(pageKey: string) {
   await requireAdmin("tr");
   if (!(PAGE_KEYS as readonly string[]).includes(pageKey)) throw new Error("Invalid page key");
   await prisma.pageAppearanceOverride.deleteMany({ where: { pageKey } });
+  revalidateTag(SITE_APPEARANCE_TAG, { expire: 0 });
   revalidatePath("/", "layout");
   return { ok: true };
 }
@@ -87,6 +91,7 @@ export async function activateTheme(themeId: ThemeId) {
   } else {
     await prisma.siteAppearance.create({ data: { activeTheme: themeId, globalOverrides: {} } });
   }
+  revalidateTag(SITE_APPEARANCE_TAG, { expire: 0 });
   revalidatePath("/", "layout");
   return { ok: true };
 }
@@ -101,6 +106,7 @@ export async function saveGlobalOverrides(overrides: ThemeOverrides) {
   } else {
     await prisma.siteAppearance.create({ data: { activeTheme: DEFAULT_THEME_ID, globalOverrides: safe } });
   }
+  revalidateTag(SITE_APPEARANCE_TAG, { expire: 0 });
   revalidatePath("/", "layout");
   return { ok: true };
 }
@@ -113,6 +119,7 @@ export async function savePageOverrides(pageKey: string, overrides: ThemeOverrid
     update: { overrides: safe },
     create: { pageKey, overrides: safe },
   });
+  revalidateTag(SITE_APPEARANCE_TAG, { expire: 0 });
   revalidatePath("/", "layout");
   return { ok: true };
 }
@@ -120,6 +127,7 @@ export async function savePageOverrides(pageKey: string, overrides: ThemeOverrid
 export async function resetPageOverrides(pageKey: string) {
   await requireAdmin("tr");
   await prisma.pageAppearanceOverride.deleteMany({ where: { pageKey } });
+  revalidateTag(SITE_APPEARANCE_TAG, { expire: 0 });
   revalidatePath("/", "layout");
   return { ok: true };
 }
@@ -127,6 +135,7 @@ export async function resetPageOverrides(pageKey: string) {
 export async function resetToThemeDefaults(themeId?: string) {
   await requireAdmin("tr");
   const id = (VALID_THEMES as readonly string[]).includes(themeId ?? "") ? (themeId as ThemeId) : DEFAULT_THEME_ID;
+  // activateTheme already calls revalidateTag + revalidatePath
   return activateTheme(id);
 }
 
