@@ -195,13 +195,24 @@ All colors use semantic tokens (`--color-primary`, `--color-foreground`, etc.). 
 
 ---
 
-## Known Limitations (V1)
+## Status (Updated 2026-09-26)
 
-- Admin form builder UI not implemented (templates managed via seed/DB)
-- Admin page profile editor not implemented
-- Layout selector (SPLIT/FORM_FIRST/EDITORIAL) not wired to UI switch
-- Multi-step "back" button per-step validation not implemented (validates on final submit)
-- Product → template/profile linking requires direct DB or future admin UI
+### Implemented ✓
+- Admin Form Template Builder: list, create, edit, archive, duplicate; full question + option CRUD with reorder
+- Admin Page Profile Editor: tabbed editor with General/Process/FAQ/Products tabs
+- Product → Template/Profile linking in product admin
+- Admin Navigation page: NavItem CRUD with navbar/footer visibility, reorder
+- Member dashboard: Application detail page with snapshot answers grouped by section, status messages
+- Conditional logic utility: `filterVisibleQuestions`, `evaluateRule`, `cleanHiddenAnswers`
+- Snapshot safety: labels captured at submission time, readable after template changes
+- Integration tests: 10 tests covering CRUD, binding, snapshot safety, authorization
+- Unit tests: conditional logic (14 tests), template structure, theme presets
+
+### Known Limitations (V2)
+- Conditional logic UI builder not implemented (utility exists, no admin UI to set rules)
+- Layout selector (SPLIT/FORM_FIRST/EDITORIAL) schema exists but not wired to render differences
+- Step-level validation (validate before advancing step) not implemented
+- `OPTIONAL_INSTRUCTOR` block UI not implemented
+- `NOT_FOR_YOU` and `TARGET_AUDIENCE` blocks not in context panel
 - Playwright E2E tests not yet written
-- `OPTIONAL_INSTRUCTOR` block data model exists but UI not implemented
-- `NOT_FOR_YOU` and `TARGET_AUDIENCE` block rendering not yet in context panel
+- Localization: some strings still hardcoded (apply page, admin review)
