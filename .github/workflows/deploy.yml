@@ -190,7 +190,7 @@ jobs:
               --network ferhatacademy_net \
               -e DATABASE_URL="$DB_URL" \
               ghcr.io/sadikortaoglan/ferhatacademy:latest \
-              node node_modules/.bin/prisma migrate deploy --schema=prisma/schema.prisma
+              node_modules/.bin/prisma migrate deploy --schema=prisma/schema.prisma
             echo "✅ Migrations done"
 
             # ── 7. Update only the web service (postgres stays unchanged) ──
