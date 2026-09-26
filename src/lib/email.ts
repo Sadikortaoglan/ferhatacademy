@@ -145,6 +145,114 @@ export async function sendApplicationSubmittedToAdmin(opts: {
   });
 }
 
+export async function sendApplicationApprovedToApplicant(opts: {
+  to: string;
+  name: string;
+  productName: string;
+  applicationId: string;
+  locale?: string;
+}) {
+  const resend = getResend();
+  if (!resend) return;
+  const isTr = (opts.locale ?? "tr") === "tr";
+  await resend.emails.send({
+    from: FROM,
+    to: opts.to,
+    subject: isTr
+      ? `🎉 Başvurunuz Onaylandı — ${opts.productName}`
+      : `🎉 Application Approved — ${opts.productName}`,
+    html: isTr
+      ? `<div style="font-family:sans-serif;max-width:560px;margin:0 auto">
+  <h2 style="color:#16a34a">🎉 Tebrikler, Başvurunuz Onaylandı!</h2>
+  <p>Merhaba ${opts.name},</p>
+  <p><strong>${opts.productName}</strong> programı için başvurunuz onaylanmıştır.</p>
+  <p>Programa katılım ve sonraki adımlar için aşağıdaki linke tıklayabilirsiniz.</p>
+  <a href="${BASE_URL}/tr/dashboard/applications/${opts.applicationId}" style="display:inline-block;background:#16a34a;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;margin-top:16px">Başvuruyu Görüntüle →</a>
+  <p style="margin-top:24px;color:#888;font-size:12px">Ferhat Academy</p>
+</div>`
+      : `<div style="font-family:sans-serif;max-width:560px;margin:0 auto">
+  <h2 style="color:#16a34a">🎉 Congratulations, Your Application is Approved!</h2>
+  <p>Hello ${opts.name},</p>
+  <p>Your application for <strong>${opts.productName}</strong> has been approved.</p>
+  <p>Click below to view your application and next steps.</p>
+  <a href="${BASE_URL}/en/dashboard/applications/${opts.applicationId}" style="display:inline-block;background:#16a34a;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;margin-top:16px">View Application →</a>
+  <p style="margin-top:24px;color:#888;font-size:12px">Ferhat Academy</p>
+</div>`,
+  });
+}
+
+export async function sendApplicationRejectedToApplicant(opts: {
+  to: string;
+  name: string;
+  productName: string;
+  applicationId: string;
+  locale?: string;
+}) {
+  const resend = getResend();
+  if (!resend) return;
+  const isTr = (opts.locale ?? "tr") === "tr";
+  await resend.emails.send({
+    from: FROM,
+    to: opts.to,
+    subject: isTr
+      ? `Başvurunuz Hakkında Bilgilendirme — ${opts.productName}`
+      : `Regarding Your Application — ${opts.productName}`,
+    html: isTr
+      ? `<div style="font-family:sans-serif;max-width:560px;margin:0 auto">
+  <h2 style="color:#0d1117">Başvurunuz Değerlendirildi</h2>
+  <p>Merhaba ${opts.name},</p>
+  <p><strong>${opts.productName}</strong> programı için yaptığınız başvuruyu dikkatle inceledik. Maalesef bu dönem için uygun bir eşleşme bulamadık.</p>
+  <p>Gelecekteki fırsatlar için takipte kalmanızı tavsiye ederiz.</p>
+  <a href="${BASE_URL}/tr/dashboard/applications/${opts.applicationId}" style="display:inline-block;background:#6b7280;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;margin-top:16px">Başvurumu Görüntüle →</a>
+  <p style="margin-top:24px;color:#888;font-size:12px">Ferhat Academy</p>
+</div>`
+      : `<div style="font-family:sans-serif;max-width:560px;margin:0 auto">
+  <h2 style="color:#0d1117">Your Application Has Been Reviewed</h2>
+  <p>Hello ${opts.name},</p>
+  <p>We carefully reviewed your application for <strong>${opts.productName}</strong>. Unfortunately, we weren't able to find a suitable match for this period.</p>
+  <p>We encourage you to stay tuned for future opportunities.</p>
+  <a href="${BASE_URL}/en/dashboard/applications/${opts.applicationId}" style="display:inline-block;background:#6b7280;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;margin-top:16px">View Application →</a>
+  <p style="margin-top:24px;color:#888;font-size:12px">Ferhat Academy</p>
+</div>`,
+  });
+}
+
+export async function sendApplicationWaitlistedToApplicant(opts: {
+  to: string;
+  name: string;
+  productName: string;
+  applicationId: string;
+  locale?: string;
+}) {
+  const resend = getResend();
+  if (!resend) return;
+  const isTr = (opts.locale ?? "tr") === "tr";
+  await resend.emails.send({
+    from: FROM,
+    to: opts.to,
+    subject: isTr
+      ? `Başvurunuz Bekleme Listesinde — ${opts.productName}`
+      : `You're on the Waitlist — ${opts.productName}`,
+    html: isTr
+      ? `<div style="font-family:sans-serif;max-width:560px;margin:0 auto">
+  <h2 style="color:#d97706">⏳ Bekleme Listesine Alındınız</h2>
+  <p>Merhaba ${opts.name},</p>
+  <p><strong>${opts.productName}</strong> programı için başvurunuz bekleme listesine alınmıştır.</p>
+  <p>Yer açıldığında sizinle iletişime geçeceğiz. Sabırlı olduğunuz için teşekkürler.</p>
+  <a href="${BASE_URL}/tr/dashboard/applications/${opts.applicationId}" style="display:inline-block;background:#d97706;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;margin-top:16px">Başvurumu Görüntüle →</a>
+  <p style="margin-top:24px;color:#888;font-size:12px">Ferhat Academy</p>
+</div>`
+      : `<div style="font-family:sans-serif;max-width:560px;margin:0 auto">
+  <h2 style="color:#d97706">⏳ You're on the Waitlist</h2>
+  <p>Hello ${opts.name},</p>
+  <p>Your application for <strong>${opts.productName}</strong> has been placed on the waitlist.</p>
+  <p>We'll reach out to you when a spot becomes available. Thank you for your patience.</p>
+  <a href="${BASE_URL}/en/dashboard/applications/${opts.applicationId}" style="display:inline-block;background:#d97706;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;margin-top:16px">View Application →</a>
+  <p style="margin-top:24px;color:#888;font-size:12px">Ferhat Academy</p>
+</div>`,
+  });
+}
+
 export async function sendPaymentApprovedToCustomer(opts: {
   to: string;
   name: string;

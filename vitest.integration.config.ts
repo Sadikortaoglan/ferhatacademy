@@ -12,7 +12,8 @@ export default defineConfig({
     include: ["tests/integration/**/*.test.ts"],
     testTimeout: 60000,
     hookTimeout: 60000,
-    // Run serially so all tests share one container
+    // Single worker + serial sequence: all files share one container without DB contamination
+    maxWorkers: 1,
     sequence: { concurrent: false },
   },
 });
