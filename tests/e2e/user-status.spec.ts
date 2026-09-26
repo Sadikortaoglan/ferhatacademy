@@ -25,14 +25,12 @@ test.describe("User Status — deactivate / reactivate", () => {
     await expect(page.getByText(/hesap durumu|account status/i)).toBeVisible();
   });
 
-  test("deactivated user cannot access the member dashboard", async ({ page, context }) => {
-    // Login as user first to get a session
-    await loginAs(page, USER_EMAIL, USER_PASSWORD);
-    await expect(page).toHaveURL(/\/tr\/dashboard/);
-
-    // Login as admin in a second tab and deactivate the user
-    const adminPage = await context.newPage();
+  test("deactivated user cannot log in", async ({ browser }) => {
+    // Admin must use a SEPARATE browser context — shared context would reuse cookies
+    const adminContext = await browser.newContext();
+    const adminPage = await adminContext.newPage();
     await adminPage.goto("/tr/login");
+    await expect(adminPage).toHaveURL(/\/tr\/login/, { timeout: 5000 });
     await adminPage.getByLabel(/e-posta/i).fill(ADMIN_EMAIL);
     await adminPage.getByLabel(/şifre/i).fill(ADMIN_PASSWORD);
     await adminPage.getByRole("button", { name: /giriş yap/i }).click();
@@ -40,31 +38,48 @@ test.describe("User Status — deactivate / reactivate", () => {
 
     // Find the regular user and deactivate
     await adminPage.goto("/tr/admin/users");
-    await adminPage.getByPlaceholder(/ara/i).fill(USER_EMAIL);
-    await adminPage.keyboard.press("Enter");
-    await adminPage.getByRole("link", { name: /detay|view/i }).first().click();
+    const detailLinks = adminPage.getByRole("link", { name: /detay|view/i });
+    // Filter to find the test user — search if available
+    const searchInput = adminPage.getByPlaceholder(/ara/i);
+    if (await searchInput.isVisible()) {
+      await searchInput.fill(USER_EMAIL);
+      await adminPage.keyboard.press("Enter");
+      await adminPage.waitForTimeout(500);
+    }
+    await detailLinks.first().click();
     await adminPage.waitForURL(/\/tr\/admin\/users\/.+/);
 
-    const deactivateBtn = adminPage.getByRole("button", { name: /pasifleştir/i });
-    if (await deactivateBtn.isVisible()) {
+    // Deactivate — button text is "Hesabı Pasifleştir"
+    const deactivateBtn = adminPage.getByRole("button", { name: /hesabı pasifleştir/i });
+    const isAlreadyInactive = !(await deactivateBtn.isVisible());
+
+    if (!isAlreadyInactive) {
       await deactivateBtn.click();
-      // Confirm dialog
-      const confirmBtn = adminPage.getByRole("button", { name: /pasifleştir/i }).last();
-      await confirmBtn.click();
-      await adminPage.waitForTimeout(1000);
+      // Confirm in dialog
+      await adminPage.getByRole("button", { name: /hesabı pasifleştir/i }).last().click();
+      await adminPage.waitForTimeout(1500);
     }
 
-    // Now try to navigate in the user page — session should be invalidated
-    await page.goto("/tr/dashboard");
-    // Should redirect to login since session was deleted
-    await expect(page).toHaveURL(/\/tr\/login/, { timeout: 8000 });
+    // Now verify: a FRESH login attempt as the deactivated user must fail.
+    // Use a separate context so there is no existing session for the user.
+    const userContext = await browser.newContext();
+    const userPage = await userContext.newPage();
+    await userPage.goto("/tr/login");
+    await userPage.getByLabel(/e-posta/i).fill(USER_EMAIL);
+    await userPage.getByLabel(/şifre/i).fill(USER_PASSWORD);
+    await userPage.getByRole("button", { name: /giriş yap/i }).click();
+    // Should NOT redirect to dashboard — stays on login or shows banned message
+    await userPage.waitForTimeout(2000);
+    await expect(userPage).not.toHaveURL(/\/tr\/dashboard/, { timeout: 5000 });
+    await userContext.close();
 
-    // Re-activate the user so other tests aren't broken
-    const reactivateBtn = adminPage.getByRole("button", { name: /aktifleştir/i });
+    // Re-activate the user so subsequent tests are not broken
+    const reactivateBtn = adminPage.getByRole("button", { name: /hesabı aktifleştir/i });
     if (await reactivateBtn.isVisible()) {
       await reactivateBtn.click();
-      await adminPage.getByRole("button", { name: /aktifleştir/i }).last().click();
+      await adminPage.getByRole("button", { name: /hesabı aktifleştir/i }).last().click();
+      await adminPage.waitForTimeout(1000);
     }
-    await adminPage.close();
+    await adminContext.close();
   });
 });

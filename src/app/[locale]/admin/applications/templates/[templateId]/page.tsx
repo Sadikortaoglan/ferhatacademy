@@ -15,13 +15,20 @@ export default async function EditTemplatePage({
   const template = await prisma.applicationFormTemplate.findUnique({
     where: { id: templateId },
     include: {
+      steps: { orderBy: { position: "asc" } },
       questions: {
-        include: {
-          options: { orderBy: { position: "asc" } },
-        },
+        include: { options: { orderBy: { position: "asc" } } },
         orderBy: { position: "asc" },
       },
       _count: { select: { applications: true } },
+      products: {
+        select: {
+          id: true,
+          slug: true,
+          translations: { where: { locale }, select: { name: true } },
+        },
+        take: 20,
+      },
     },
   });
   if (!template) notFound();
@@ -42,6 +49,33 @@ export default async function EditTemplatePage({
           </span>
         )}
       </div>
+      {/* Used By section */}
+      {template.products.length > 0 && (
+        <div className="rounded-xl border border-border bg-muted/20 px-4 py-3 space-y-2">
+          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+            Kullanıldığı Programlar ({template.products.length})
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {template.products.map((p) => {
+              const name = p.translations[0]?.name ?? p.slug;
+              return (
+                <Link
+                  key={p.id}
+                  href={`/${locale}/admin/products/${p.id}`}
+                  className="rounded-full border border-border bg-background px-3 py-0.5 text-xs font-medium text-foreground hover:text-primary hover:border-primary/40 transition-colors"
+                >
+                  {name}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
+      {template.products.length === 0 && (
+        <div className="rounded-xl border border-warning/30 bg-warning/5 px-4 py-3 text-xs text-warning">
+          Bu şablon henüz hiçbir programa atanmamış.
+        </div>
+      )}
       <TemplateEditor locale={locale} template={template} />
     </div>
   );

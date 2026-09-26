@@ -28,6 +28,7 @@ const getNavItems = (locale: string) => [
   { href: `/${locale}/admin/products`, label: "admin.products", icon: ShoppingBag, exact: false },
   { href: `/${locale}/admin/applications`, label: "admin.applications", icon: FileText, exact: false },
   { href: `/${locale}/admin/applications/templates`, label: "admin.formTemplates", icon: FileText, exact: false },
+  { href: `/${locale}/admin/applications/settings`, label: "admin.applicationSettings", icon: FileText, exact: false },
   { href: `/${locale}/admin/orders`, label: "admin.orders", icon: Receipt, exact: false },
   { href: `/${locale}/admin/payments`, label: "admin.payments", icon: CreditCard, exact: false },
   { href: `/${locale}/admin/assignments`, label: "admin.assignments", icon: ClipboardList, exact: false },
@@ -55,8 +56,14 @@ export function AdminSidebar({ locale }: AdminSidebarProps) {
         </Link>
       </div>
       <nav className="flex-1 p-4 space-y-0.5 overflow-y-auto">
-        {getNavItems(locale).map(({ href, label, icon: Icon, exact }) => {
-          const isActive = exact ? pathname === href : pathname.startsWith(href);
+        {(() => {
+          const items = getNavItems(locale);
+          // Find the most specific matching href to avoid parent+child both being active
+          const bestMatch = items
+            .filter(({ href, exact }) => exact ? pathname === href : pathname.startsWith(href))
+            .sort((a, b) => b.href.length - a.href.length)[0]?.href;
+          return items.map(({ href, label, icon: Icon }) => {
+          const isActive = href === bestMatch;
           return (
             <Link
               key={href}
@@ -72,7 +79,8 @@ export function AdminSidebar({ locale }: AdminSidebarProps) {
               {t(label)}
             </Link>
           );
-        })}
+          });
+        })()}
       </nav>
       <div className="p-4 border-t border-border">
         <Link

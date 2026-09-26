@@ -27,7 +27,13 @@ export default async function AdminProductDetailPage({
     }),
     prisma.applicationFormTemplate.findMany({
       where: { archived: false },
-      select: { id: true, key: true, nameTr: true, archived: true },
+      select: {
+        id: true,
+        key: true,
+        nameTr: true,
+        archived: true,
+        _count: { select: { steps: true, questions: true } },
+      },
     }),
     prisma.applicationPageProfile.findMany({
       select: { id: true, key: true, headlineTr: true },

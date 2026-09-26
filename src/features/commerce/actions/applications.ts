@@ -6,6 +6,11 @@ import { Role } from "@prisma/client";
 import { createAuditLog } from "@/server/audit";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
+import {
+  sendApplicationApprovedToApplicant,
+  sendApplicationRejectedToApplicant,
+  sendApplicationWaitlistedToApplicant,
+} from "@/lib/email";
 
 async function getSessionUser() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -67,4 +72,27 @@ export async function adminUpdateApplicationStatus(
 
   await createAuditLog({ action, actorId: admin.id, targetId: appId, targetType: "Application" });
   revalidatePath("/[locale]/admin/applications", "page");
+
+  if (["APPROVED", "REJECTED", "WAITLISTED"].includes(status)) {
+    const app = await prisma.application.findUnique({
+      where: { id: appId },
+      include: {
+        user: true,
+        product: { include: { translations: { take: 1 } } },
+      },
+    });
+    if (app) {
+      const productName =
+        (app.product.translations as { locale: string; name: string }[])[0]?.name ?? app.product.slug;
+      const opts = {
+        to: app.user.email,
+        name: app.user.name ?? app.user.email,
+        productName,
+        applicationId: appId,
+      };
+      if (status === "APPROVED") void sendApplicationApprovedToApplicant(opts).catch(() => {});
+      else if (status === "REJECTED") void sendApplicationRejectedToApplicant(opts).catch(() => {});
+      else if (status === "WAITLISTED") void sendApplicationWaitlistedToApplicant(opts).catch(() => {});
+    }
+  }
 }

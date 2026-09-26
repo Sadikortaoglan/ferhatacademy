@@ -2,9 +2,10 @@ import { redirect, notFound } from "next/navigation";
 import { getSession } from "@/server/auth";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { ApplicationContextPanel, type ContextData } from "@/features/applications/components/context-panel";
 import { ApplicationFormPanel } from "@/features/applications/components/form-panel";
+import { ApplyPageContext } from "@/features/applications/components/apply-page-context";
 import { getApplicationPageData } from "@/features/applications/actions";
+import { ChevronLeft } from "lucide-react";
 
 export default async function ApplyPage({
   params,
@@ -18,7 +19,6 @@ export default async function ApplyPage({
   }
 
   const product = await getApplicationPageData(slug);
-
   if (!product || product.status !== "PUBLISHED") notFound();
 
   const existing = await prisma.application.findUnique({
@@ -41,76 +41,86 @@ export default async function ApplyPage({
 
   const isTr = locale === "tr";
 
-  const contextData: ContextData = {
-    programName,
-    programDescription,
-    programVisualUrl: pageProfile?.programVisualUrl ?? null,
-    motivationText: isTr
-      ? (pageProfile?.motivationTr ?? null)
-      : (pageProfile?.motivationEn ?? pageProfile?.motivationTr ?? null),
-    processSteps: pageProfile?.processSteps ?? [],
-    faqItems: pageProfile?.faqItems ?? [],
-    inclusions: product.inclusions ?? [],
-    reassuranceText: isTr
-      ? (pageProfile?.reassuranceTr ?? null)
-      : (pageProfile?.reassuranceEn ?? pageProfile?.reassuranceTr ?? null),
-  };
-
   const pageHeadline = isTr
     ? (pageProfile?.headlineTr ?? programName)
     : (pageProfile?.headlineEn ?? programName);
   const pageSubtitle = isTr
     ? (pageProfile?.subtitleTr ?? programDescription)
     : (pageProfile?.subtitleEn ?? programDescription);
+  const motivationText = isTr
+    ? (pageProfile?.motivationTr ?? null)
+    : (pageProfile?.motivationEn ?? pageProfile?.motivationTr ?? null);
   const ctaLabel = isTr ? pageProfile?.ctaLabelTr : pageProfile?.ctaLabelEn;
+  const programVisualUrl = pageProfile?.programVisualUrl ?? null;
 
   const hasActiveApplication =
     existing && !["REJECTED", "CANCELLED"].includes(existing.status);
 
+  const hasBgImage = !!programVisualUrl;
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Breadcrumb */}
-      <div className="border-b border-border bg-surface/50 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center gap-2 text-xs text-muted-foreground">
+      {/* Slim breadcrumb nav */}
+      <div className="border-b border-border/60 bg-background/80 backdrop-blur-sm sticky top-0 z-10">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-2">
           <Link
             href={`/${locale}/products/${slug}`}
-            className="hover:text-foreground transition-colors"
+            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
+            <ChevronLeft className="h-3.5 w-3.5" />
             {programName}
           </Link>
-          <span>/</span>
-          <span className="text-foreground font-medium">
+          <span className="text-xs text-muted-foreground/40">/</span>
+          <span className="text-xs text-foreground font-medium">
             {isTr ? "Başvuru" : "Application"}
           </span>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
-        {/* Page header */}
-        <div className="mb-8 lg:mb-10">
-          <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-1">
+      {/* Program identity header */}
+      <div
+        className={`relative overflow-hidden ${hasBgImage ? "min-h-[260px] sm:min-h-[300px]" : "py-10 sm:py-14"}`}
+        style={hasBgImage ? { background: "var(--color-background)" } : undefined}
+      >
+        {hasBgImage && (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={programVisualUrl}
+              alt=""
+              aria-hidden="true"
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-background/70" />
+          </>
+        )}
+        <div className={`relative max-w-5xl mx-auto px-4 sm:px-6 ${hasBgImage ? "py-12 sm:py-16" : ""}`}>
+          <p className="text-xs font-bold uppercase tracking-widest text-primary mb-3">
             {isTr ? "Başvuru" : "Application"}
           </p>
-          <h1 className="text-2xl lg:text-3xl font-black text-foreground leading-tight">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-foreground leading-tight max-w-2xl">
             {pageHeadline}
           </h1>
           {pageSubtitle && (
-            <p className="text-base text-muted-foreground mt-2 max-w-2xl leading-relaxed">
+            <p className="text-sm sm:text-base text-muted-foreground mt-3 max-w-xl leading-relaxed">
               {pageSubtitle}
             </p>
           )}
         </div>
+      </div>
 
+      {/* Main content */}
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 lg:py-12">
         {hasActiveApplication ? (
           /* Already applied */
-          <div className="max-w-lg mx-auto">
+          <div className="max-w-md mx-auto">
             <div className="rounded-2xl border border-border bg-surface p-8 text-center space-y-5">
               <div className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 mx-auto text-2xl">
-                📋
+                ✓
               </div>
               <div>
                 <h2 className="text-lg font-black text-foreground">
-                  {isTr ? "Başvurunuz Mevcut" : "Application Exists"}
+                  {isTr ? "Başvurunuz Alındı" : "Application Received"}
                 </h2>
                 <p className="text-sm text-muted-foreground mt-1">
                   {isTr
@@ -138,18 +148,30 @@ export default async function ApplyPage({
             </div>
           </div>
         ) : (
-          /* Two-column split layout */
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-12">
-            {/* Left context panel — 2/5 ≈ 40% — shows below form on mobile */}
-            <div className="lg:col-span-2 order-2 lg:order-1">
-              <ApplicationContextPanel data={contextData} locale={locale} />
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-8 lg:gap-12 items-start">
+            {/* Left: motivation + context — below form on mobile */}
+            <div className="order-2 lg:order-1 space-y-8 min-w-0">
+              {motivationText && (
+                <blockquote className="border-l-2 border-primary pl-4">
+                  <p className="text-sm text-foreground leading-relaxed">{motivationText}</p>
+                </blockquote>
+              )}
+              <ApplyPageContext
+                locale={locale}
+                inclusions={product.inclusions ?? []}
+                processSteps={pageProfile?.processSteps ?? []}
+                faqItems={pageProfile?.faqItems ?? []}
+                reassuranceText={
+                  isTr ? (pageProfile?.reassuranceTr ?? null) : (pageProfile?.reassuranceEn ?? null)
+                }
+              />
             </div>
 
-            {/* Right form panel — 3/5 ≈ 60% — appears first on mobile */}
-            <div className="lg:col-span-3 order-1 lg:order-2">
-              <div className="lg:sticky lg:top-8">
-                <div className="rounded-2xl border border-border bg-surface p-6 lg:p-8">
-                  <div className="mb-6 pb-5 border-b border-border">
+            {/* Right: THE FORM — appears first on mobile, sticky on desktop */}
+            <div className="order-1 lg:order-2">
+              <div className="lg:sticky lg:top-20">
+                <div className="rounded-2xl border border-border bg-surface shadow-sm p-6 lg:p-8">
+                  <div className="mb-5 pb-4 border-b border-border">
                     <h2 className="text-base font-black text-foreground">
                       {isTr ? "Başvuru Formu" : "Application Form"}
                     </h2>
