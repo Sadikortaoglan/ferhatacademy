@@ -116,47 +116,56 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
             set -e
-            cd /opt/ferhatacademy
+            COMPOSE="docker-compose -p ferhatacademy -f /opt/ferhatacademy/docker-compose.yml"
 
-            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-
-            # Verify compose config only touches Ferhat Academy
-            docker compose -p ferhatacademy -f /opt/ferhatacademy/docker-compose.yml config > /dev/null
-
-            # Check existing production containers are alive
+            # ── 1. Verify pre-deploy state ─────────────────────────────────
+            echo "=== Pre-deploy containers ==="
             docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
 
-            # Pull latest image (contains up-to-date prisma/migrations from the build)
-            docker compose -p ferhatacademy -f /opt/ferhatacademy/docker-compose.yml pull
+            # ── 2. Authenticate to GHCR ────────────────────────────────────
+            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            # Run database migrations — the image includes prisma CLI + migration files
-            # prisma migrate deploy is idempotent: exits 0 when nothing is pending
+            # ── 3. Validate Ferhat Academy compose config ──────────────────
+            $COMPOSE config > /dev/null
+
+            # ── 4. Pull Ferhat Academy images only ─────────────────────────
+            $COMPOSE pull
+
+            # ── 5. Verify migration targets Ferhat Academy DB ──────────────
+            DB_HOST=$(docker inspect ferhatacademy-postgres --format '{{.Name}}' 2>/dev/null || echo "")
+            if [ -z "$DB_HOST" ]; then
+              echo "❌ ferhatacademy-postgres container not found — aborting migration"
+              exit 1
+            fi
+            echo "✅ Target database: $DB_HOST"
+
+            # ── 6. Run Prisma migration via Compose web service ────────────
+            # Uses the configured DATABASE_URL from .env, correct network, no manual image ref
+            # prisma migrate deploy is idempotent — exits 0 if nothing is pending
             echo "Running database migrations..."
-            docker run --rm \
-              --network ferhatacademy_net \
-              --env-file /opt/ferhatacademy/.env \
-              --entrypoint "" \
-              --user root \
-              ghcr.io/sadikortaoglan/ferhatacademy:latest \
+            $COMPOSE run --rm --no-deps \
+              -e HOSTNAME=migration \
+              web \
               sh -c "node_modules/.bin/prisma migrate deploy --schema=prisma/schema.prisma"
             echo "✅ Migrations done"
 
-            # Start Ferhat Academy
-            docker rm -f ferhatacademy-web 2>/dev/null || true
-            docker compose -p ferhatacademy -f /opt/ferhatacademy/docker-compose.yml up -d
+            # ── 7. Update only the web service (postgres stays unchanged) ──
+            $COMPOSE up -d --no-deps web
 
-            # Wait for health (retry 20x / 3s = 60s)
+            # ── 8. Health check (retry 20x / 3s = 60s) ────────────────────
             echo "Waiting for health check..."
             for i in $(seq 1 20); do
               if curl -sf http://127.0.0.1:3010/api/health; then
+                echo ""
                 echo "✅ Ferhat Academy is healthy"
                 break
               fi
-              if [ $i -eq 20 ]; then echo "❌ Health check timed out" && exit 1; fi
+              if [ "$i" -eq 20 ]; then echo "❌ Health check timed out" && exit 1; fi
               sleep 3
             done
 
-            # Post-deploy safety check
+            # ── 9. Post-deploy verification ────────────────────────────────
+            echo "=== Post-deploy containers ==="
             docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
             free -h
             df -h
