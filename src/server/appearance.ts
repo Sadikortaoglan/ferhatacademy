@@ -1,4 +1,4 @@
-import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import {
   resolveTheme,
@@ -11,6 +11,8 @@ import { THEME_CONFIGS, DEFAULT_THEME_ID, type ThemeId } from "@/lib/themes";
 
 export type { ResolvedTheme, ThemeOverrides };
 
+export const SITE_APPEARANCE_TAG = "site-appearance";
+
 export type AppearanceConfig = {
   themePreset: string;
   resolved: ResolvedTheme;
@@ -21,17 +23,23 @@ export const DEFAULTS: AppearanceConfig = {
   resolved: resolveTheme(DEFAULT_THEME_ID, {}, null),
 };
 
-export const getSiteAppearance = cache(async (): Promise<AppearanceConfig> => {
-  try {
-    const row = await prisma.siteAppearance.findFirst({ orderBy: { createdAt: "asc" } });
-    if (!row) return DEFAULTS;
-    const globalOverrides = validateOverrides(row.globalOverrides);
-    const resolved = resolveTheme(row.activeTheme, globalOverrides, null);
-    return { themePreset: row.activeTheme, resolved };
-  } catch {
-    return DEFAULTS;
-  }
-});
+// Cached across requests — revalidated on-demand when admin saves appearance.
+// revalidate: 300 is a safety net; primary invalidation is via revalidateTag.
+export const getSiteAppearance = unstable_cache(
+  async (): Promise<AppearanceConfig> => {
+    try {
+      const row = await prisma.siteAppearance.findFirst({ orderBy: { createdAt: "asc" } });
+      if (!row) return DEFAULTS;
+      const globalOverrides = validateOverrides(row.globalOverrides);
+      const resolved = resolveTheme(row.activeTheme, globalOverrides, null);
+      return { themePreset: row.activeTheme, resolved };
+    } catch {
+      return DEFAULTS;
+    }
+  },
+  [SITE_APPEARANCE_TAG],
+  { tags: [SITE_APPEARANCE_TAG], revalidate: 300 },
+);
 
 export async function getSiteAppearanceForPage(pageKey: string): Promise<AppearanceConfig> {
   try {
