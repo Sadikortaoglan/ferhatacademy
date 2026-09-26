@@ -30,7 +30,7 @@ export function ProductCard({ product, locale }: ProductCardProps) {
   return (
     <Link
       href={`/${locale}/products/${product.slug}`}
-      className="group block rounded-xl overflow-hidden border border-border bg-surface hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5"
+      className="card-themed group block rounded-xl overflow-hidden border border-border bg-surface hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5"
     >
       <div className="aspect-video bg-muted relative overflow-hidden">
         {product.coverImageUrl ? (

@@ -212,12 +212,15 @@
     "courses": "Courses",
     "products": "Products",
     "applications": "Applications",
+    "formTemplates": "Form Templates",
     "orders": "Orders",
     "payments": "Payments",
     "assignments": "Assignments",
     "edit": "Edit",
     "access": "Access",
     "aboutPage": "About Page",
+    "navigation": "Navigation",
+    "appearance": "Appearance",
     "settings": "Site Settings",
     "userDetail": "User Detail",
     "totalUsers": "Total Users",
@@ -344,7 +347,8 @@
     "clearFilters": "Clear",
     "searchPlaceholder": "Search by name or email...",
     "accountBanned": "This account has been deactivated.",
-    "banReason": "Reason"
+    "banReason": "Reason",
+    "appProfiles": "Application Pages"
   },
   "errors": {
     "notFound": "Page not found",
@@ -399,5 +403,53 @@
     "privacy": "Privacy Policy",
     "terms": "Terms of Service",
     "copyright": "All rights reserved."
+  },
+  "applications": {
+    "title": "My Applications",
+    "empty": "You have no applications yet.",
+    "status": {
+      "PENDING": "Pending",
+      "UNDER_REVIEW": "Under Review",
+      "APPROVED": "Approved",
+      "REJECTED": "Rejected",
+      "CANCELLED": "Cancelled",
+      "WAITLISTED": "Waitlisted"
+    },
+    "apply": {
+      "title": "Application",
+      "formTitle": "Application Form",
+      "requiredNote": "Fields marked with * are required.",
+      "alreadyApplied": "Application Exists",
+      "alreadyAppliedDesc": "You have already applied for this program.",
+      "myApplications": "My Applications",
+      "backToProgram": "Back to Program",
+      "submitting": "Submitting...",
+      "submit": "Apply",
+      "nextStep": "Next Step",
+      "prevStep": "Previous Step",
+      "confirmation": {
+        "title": "Application Received",
+        "desc": "We've received your application and will review it shortly.",
+        "viewApplications": "View My Applications",
+        "backToProgram": "Back to Program"
+      }
+    },
+    "admin": {
+      "title": "Applications",
+      "allApplications": "All Applications",
+      "reviewApplication": "Review Application",
+      "applicant": "Applicant",
+      "program": "Program",
+      "appliedAt": "Applied At",
+      "answers": "Answers",
+      "noAnswers": "No answers found.",
+      "internalNote": "Internal Note",
+      "actions": {
+        "approve": "Approve",
+        "reject": "Reject",
+        "waitlist": "Add to Waitlist",
+        "review": "Mark as Under Review"
+      }
+    }
   }
 }
