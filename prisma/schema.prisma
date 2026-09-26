@@ -30,9 +30,14 @@ enum AuditAction {
   PRODUCT_UPDATED
   PRODUCT_PUBLISHED
   APPLICATION_SUBMITTED
+  APPLICATION_REVIEW_STARTED
   APPLICATION_APPROVED
   APPLICATION_REJECTED
   APPLICATION_WAITLISTED
+  APPLICATION_CANCELLED
+  APPLICATION_TEMPLATE_CREATED
+  APPLICATION_TEMPLATE_UPDATED
+  APPLICATION_NOTIFICATION_CONFIG_UPDATED
   ORDER_CREATED
   PAYMENT_REPORTED
   PAYMENT_APPROVED
@@ -107,6 +112,21 @@ enum QuestionType {
   MULTI_SELECT
   RADIO
   CHECKBOX
+  BOOLEAN
+  CURRENCY_RANGE
+  DATE
+  TIME_RANGE
+}
+
+enum PresentationStyle {
+  STANDARD
+  CARDS
+  COMPACT_CARDS
+}
+
+enum AdminNotificationType {
+  APPLICATION_SUBMITTED
+  APPLICATION_REVIEW_STARTED
 }
 
 enum QuestionSection {
@@ -253,6 +273,7 @@ model User {
   assignmentsCreated   Assignment[]      @relation("AssignmentCreatedBy")
   applications         Application[]     @relation("ApplicationUser")
   applicationsReviewed Application[]     @relation("ApplicationReviewedBy")
+  adminNotifications   AdminNotification[] @relation("AdminNotifications")
   orders               Order[]
   paymentsApproved     Payment[]         @relation("PaymentApprovedBy")
   pageOverridesUpdated PageAppearanceOverride[] @relation("PageOverrideUpdatedBy")
@@ -590,14 +611,26 @@ model Application {
   reviewedAt        DateTime?
   reviewedById      String?
   templateId        String?
+  // UTM attribution
+  utmSource         String?
+  utmMedium         String?
+  utmCampaign       String?
+  utmContent        String?
+  utmTerm           String?
+  landingPath       String?
+  referrer          String?
+  // Email idempotency
+  confirmationEmailSentAt DateTime?
+  adminNotifiedAt         DateTime?
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
 
-  user       User                     @relation("ApplicationUser", fields: [userId], references: [id], onDelete: Cascade)
-  product    Product                  @relation(fields: [productId], references: [id])
-  reviewedBy User?                    @relation("ApplicationReviewedBy", fields: [reviewedById], references: [id])
-  template   ApplicationFormTemplate? @relation("ApplicationTemplate", fields: [templateId], references: [id])
-  response   ApplicationResponse?
+  user          User                     @relation("ApplicationUser", fields: [userId], references: [id], onDelete: Cascade)
+  product       Product                  @relation(fields: [productId], references: [id])
+  reviewedBy    User?                    @relation("ApplicationReviewedBy", fields: [reviewedById], references: [id])
+  template      ApplicationFormTemplate? @relation("ApplicationTemplate", fields: [templateId], references: [id])
+  response      ApplicationResponse?
+  notifications AdminNotification[]
 
   @@unique([userId, productId])
   @@map("applications")
@@ -614,6 +647,7 @@ model ApplicationFormTemplate {
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
 
+  steps        ApplicationFormStep[]
   questions    ApplicationQuestion[]
   products     Product[]             @relation("ProductFormTemplate")
   applications Application[]         @relation("ApplicationTemplate")
@@ -621,25 +655,53 @@ model ApplicationFormTemplate {
   @@map("application_form_templates")
 }
 
+model ApplicationFormStep {
+  id         String   @id @default(cuid())
+  templateId String
+  stableKey  String
+  position   Int      @default(0)
+  titleTr    String
+  titleEn    String
+  descTr     String?
+  descEn     String?
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  template  ApplicationFormTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  questions ApplicationQuestion[]
+
+  @@unique([templateId, stableKey])
+  @@map("application_form_steps")
+}
+
 model ApplicationQuestion {
-  id            String          @id @default(cuid())
-  templateId    String
-  key           String
-  type          QuestionType
-  section       QuestionSection @default(ADDITIONAL_INFO)
-  labelTr       String
-  labelEn       String
-  helperTr      String?
-  helperEn      String?
-  placeholderTr String?
-  placeholderEn String?
-  required      Boolean         @default(false)
-  active        Boolean         @default(true)
-  position      Int             @default(0)
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  id              String            @id @default(cuid())
+  templateId      String
+  stepId          String?
+  key             String
+  type            QuestionType
+  section         QuestionSection   @default(ADDITIONAL_INFO)
+  labelTr         String
+  labelEn         String
+  helperTr        String?
+  helperEn        String?
+  placeholderTr   String?
+  placeholderEn   String?
+  required        Boolean           @default(false)
+  active          Boolean           @default(true)
+  position        Int               @default(0)
+  // Display & UX
+  presentation    PresentationStyle @default(STANDARD)
+  autoAdvance     Boolean           @default(false)
+  highlightInAdmin Boolean          @default(false)
+  // Conditional visibility — JSON rule, null = always visible
+  conditionJson   Json?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 
   template ApplicationFormTemplate      @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  step     ApplicationFormStep?         @relation(fields: [stepId], references: [id], onDelete: SetNull)
   options  ApplicationQuestionOption[]
 
   @@unique([templateId, key])
@@ -846,4 +908,21 @@ model NavItem {
   updatedAt    DateTime @updatedAt
 
   @@map("nav_items")
+}
+
+model AdminNotification {
+  id              String                @id @default(cuid())
+  recipientUserId String
+  type            AdminNotificationType
+  title           String
+  message         String
+  entityType      String?
+  entityId        String?
+  createdAt       DateTime              @default(now())
+  readAt          DateTime?
+
+  recipient   User         @relation("AdminNotifications", fields: [recipientUserId], references: [id], onDelete: Cascade)
+  application Application? @relation(fields: [entityId], references: [id], onDelete: SetNull, map: "admin_notification_application_fk")
+
+  @@map("admin_notifications")
 }

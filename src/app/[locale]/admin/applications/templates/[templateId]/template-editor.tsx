@@ -27,6 +27,7 @@ type Question = {
   key: string;
   type: string;
   section: string;
+  stepId?: string | null;
   labelTr: string;
   labelEn: string;
   helperTr?: string | null;
@@ -36,6 +37,11 @@ type Question = {
   required: boolean;
   active: boolean;
   position: number;
+  presentation?: string;
+  autoAdvance?: boolean;
+  highlightInAdmin?: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  conditionJson?: any;
   options: QuestionOption[];
 };
 
