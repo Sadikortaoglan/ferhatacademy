@@ -176,21 +176,32 @@ jobs:
             fi
             echo "✅ Target database: $DB_HOST"
 
-            # ── 6. Run Prisma migration using the NEW GHCR image ──────────
-            # The production image already contains:
-            #   node_modules/prisma (CLI), node_modules/.bin/prisma
-            #   node_modules/@prisma (engines: schema-engine for linux-musl)
-            #   prisma/schema.prisma + prisma/migrations/
-            # No npm install on the VPS. Migration runs BEFORE the web
-            # container is replaced — if it fails, exit 1 prevents step 7
-            # and the currently healthy web container keeps serving traffic.
+            # ── 6. Run Prisma migration ────────────────────────────────────
+            # Uses node:22-alpine + npx prisma (same version as the app).
+            # A named volume (ferhat-npm-cache) persists the npm cache across
+            # deploys so after the first run subsequent downloads are instant.
+            # Migrations from the NEW image are extracted first so the schema
+            # matches the code being deployed.
+            # Migration runs BEFORE the web container is replaced — if it
+            # fails, exit 1 keeps the currently healthy container serving.
             echo "Running database migrations..."
             DB_URL=$(grep "^DATABASE_URL" /opt/ferhatacademy/.env | sed 's/^DATABASE_URL=//;s/^"//;s/"$//')
+
+            # Extract prisma dir from the new image
+            PRISMA_TMP=$(mktemp -d)
+            docker create --name ferhat-migrate-extract ghcr.io/sadikortaoglan/ferhatacademy:latest
+            docker cp ferhat-migrate-extract:/app/prisma "$PRISMA_TMP/prisma"
+            docker rm ferhat-migrate-extract
+
             docker run --rm \
               --network ferhatacademy_net \
               -e DATABASE_URL="$DB_URL" \
-              ghcr.io/sadikortaoglan/ferhatacademy:latest \
-              node_modules/.bin/prisma migrate deploy --schema=prisma/schema.prisma
+              -v ferhat-npm-cache:/root/.npm \
+              -v "$PRISMA_TMP/prisma":/app/prisma \
+              node:22-alpine \
+              sh -c "npx --yes prisma@6.19.3 migrate deploy --schema=/app/prisma/schema.prisma"
+
+            rm -rf "$PRISMA_TMP"
             echo "✅ Migrations done"
 
             # ── 7. Update only the web service (postgres stays unchanged) ──
