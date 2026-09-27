@@ -5,10 +5,12 @@ import { randomUUID } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import sharp from "sharp";
 
-const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
+const MAX_SIZE = 10 * 1024 * 1024; // 10 MB (before optimization)
+const MAX_DIMENSION = 2400; // px — longest edge
 
-// Güvenli MIME → uzantı eşleşmesi (sabit liste — client'tan gelen değer kullanılmaz)
+// Güvenli MIME whitelist
 const SAFE_MIME_EXT: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",
@@ -17,23 +19,37 @@ const SAFE_MIME_EXT: Record<string, string> = {
   "image/avif": "avif",
 };
 
-// Magic byte imzaları — MIME'ın gerçek olduğunu doğrular
+// Magic byte imzaları — MIME doğrulama
 const MAGIC: Record<string, number[][]> = {
   "image/jpeg": [[0xff, 0xd8, 0xff]],
   "image/png": [[0x89, 0x50, 0x4e, 0x47]],
-  "image/webp": [[0x52, 0x49, 0x46, 0x46]], // RIFF header (WebP)
-  "image/gif": [[0x47, 0x49, 0x46, 0x38]],  // GIF8
-  "image/avif": [], // AVIF magic daha karmaşık — MIME kontrolü yeter
+  "image/webp": [[0x52, 0x49, 0x46, 0x46]],
+  "image/gif": [[0x47, 0x49, 0x46, 0x38]],
+  "image/avif": [],
 };
 
 function checkMagic(buffer: Buffer, mimeType: string): boolean {
   const sigs = MAGIC[mimeType];
-  if (!sigs || sigs.length === 0) return true; // imza kontrolü yoksa geç
+  if (!sigs || sigs.length === 0) return true;
   return sigs.some((sig) => sig.every((byte, i) => buffer[i] === byte));
 }
 
+async function optimizeImage(buffer: Buffer, declaredMime: string): Promise<{ data: Buffer; ext: string }> {
+  // GIF: keep as-is (animation support)
+  if (declaredMime === "image/gif") {
+    return { data: buffer, ext: "gif" };
+  }
+
+  const optimized = await sharp(buffer)
+    .rotate() // auto-rotate based on EXIF orientation (strips EXIF automatically)
+    .resize(MAX_DIMENSION, MAX_DIMENSION, { fit: "inside", withoutEnlargement: true })
+    .webp({ quality: 85 })
+    .toBuffer();
+
+  return { data: optimized, ext: "webp" };
+}
+
 export async function POST(req: NextRequest) {
-  // Auth kontrolü
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Giriş yapman gerekiyor" }, { status: 401 });
@@ -56,10 +72,8 @@ export async function POST(req: NextRequest) {
   const file = formData.get("file") as File | null;
   if (!file) return NextResponse.json({ error: "Dosya bulunamadı" }, { status: 400 });
 
-  // MIME type whitelist — client'tan gelen MIME güvenilmez, sadece whitelist kontrolü
   const declaredMime = file.type.toLowerCase();
-  const safeExt = SAFE_MIME_EXT[declaredMime];
-  if (!safeExt) {
+  if (!SAFE_MIME_EXT[declaredMime]) {
     return NextResponse.json({
       error: "Desteklenmeyen dosya türü. Sadece JPEG, PNG, WebP, GIF veya AVIF yükleyebilirsin.",
     }, { status: 400 });
@@ -71,19 +85,27 @@ export async function POST(req: NextRequest) {
 
   const buffer = Buffer.from(await file.arrayBuffer());
 
-  // Magic byte doğrulaması — dosya içeriğinin gerçekten görsel olduğunu kontrol et
   if (!checkMagic(buffer, declaredMime)) {
     return NextResponse.json({
       error: "Dosya içeriği belirtilen türle eşleşmiyor.",
     }, { status: 400 });
   }
 
-  // Güvenli rastgele dosya adı — orijinal adı hiç kullanmıyoruz
-  const filename = `${randomUUID()}.${safeExt}`;
+  let optimized: Buffer;
+  let ext: string;
+  try {
+    ({ data: optimized, ext } = await optimizeImage(buffer, declaredMime));
+  } catch {
+    // Fallback: save original if optimization fails
+    optimized = buffer;
+    ext = SAFE_MIME_EXT[declaredMime];
+  }
+
+  const filename = `${randomUUID()}.${ext}`;
   const uploadsDir = join(process.cwd(), "public", "uploads");
 
   await mkdir(uploadsDir, { recursive: true });
-  await writeFile(join(uploadsDir, filename), buffer);
+  await writeFile(join(uploadsDir, filename), optimized);
 
   return NextResponse.json({ url: `/uploads/${filename}` });
 }
