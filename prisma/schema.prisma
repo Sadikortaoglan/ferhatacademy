@@ -979,6 +979,15 @@ model AppointmentType {
   @@map("appointment_types")
 }
 
+model HomepageConfig {
+  id        String   @id @default(cuid())
+  config    Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("homepage_configs")
+}
+
 model AppointmentRequest {
   id                  String            @id @default(cuid())
   fullName            String
