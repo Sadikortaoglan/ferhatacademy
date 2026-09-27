@@ -10,7 +10,7 @@ import { updateSiteSettings } from "@/features/admin/actions/settings";
 
 const schema = z.object({
   academyName: z.string().min(1),
-  supportEmail: z.string().email(),
+  supportEmail: z.string().email().optional().or(z.literal("")),
   defaultLocale: z.string().min(1),
   timezone: z.string().min(1),
   bankName: z.string().optional(),
@@ -42,7 +42,7 @@ export function SiteSettingsForm({ settings }: SiteSettingsFormProps) {
   const [activeTab, setActiveTab] = useState<TabId>("general");
   const [saved, setSaved] = useState(false);
 
-  const { register, handleSubmit } = useForm<FormData>({
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
       academyName: settings.academyName ?? "Ferhat Academy",
@@ -192,9 +192,16 @@ export function SiteSettingsForm({ settings }: SiteSettingsFormProps) {
           </div>
         )}
 
+        {Object.keys(errors).length > 0 && (
+          <p className="text-sm text-red-500">
+            Lütfen tüm zorunlu alanları kontrol edin: {Object.keys(errors).join(", ")}
+          </p>
+        )}
         <div className="flex items-center gap-4 pt-2 border-t border-border">
-          <Button type="submit">Kaydet</Button>
-          {saved && <span className="text-sm text-success font-medium">✓ Kaydedildi</span>}
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Kaydediliyor..." : "Kaydet"}
+          </Button>
+          {saved && <span className="text-sm text-green-600 font-medium">✓ Kaydedildi</span>}
         </div>
       </form>
     </div>
