@@ -105,7 +105,7 @@ describe("backward compatibility defaults", () => {
     const product = await createTestProduct(testPrisma, { price: 0 });
     const v = validateCtaConfig({ ...product, formTemplateId: null, pageProfileId: null, linkedCourseId: null });
     // FIXED + price=0 → warning (not error) for non-FREE_ENROLLMENT flow
-    // DIRECT_PURCHASE + price=0 → error
+    // DIRECT_PURCHASE + price=0 → error (only price/flow mismatch is an error now)
     expect(v.errors.some((e) => e.includes("Direkt"))).toBe(true);
   });
 });

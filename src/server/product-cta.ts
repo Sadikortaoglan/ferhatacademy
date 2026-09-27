@@ -235,7 +235,8 @@ export function validateCtaConfig(product: ProductCtaInput): CtaConfigValidation
     (product.ctaFlow === "APPLICATION" || product.ctaFlow === "APPLICATION_THEN_PURCHASE") &&
     (!product.formTemplateId || !product.pageProfileId)
   ) {
-    errors.push("Başvuru akışı için Form Şablonu ve Sayfa Profili seçilmelidir.");
+    // Warning, not error: user saves ctaFlow first, then sets template in the ApplicationConfig card below.
+    warnings.push("Başvuru akışı için Form Şablonu ve Sayfa Profili seçilmelidir (aşağıdaki Başvuru Ayarları kartından).");
   }
   if (product.ctaFlow === "INFO_ONLY") {
     warnings.push("Randevu akışı için Randevu Tipleri tanımlı olmalıdır.");

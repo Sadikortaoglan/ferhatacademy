@@ -213,14 +213,16 @@ describe("validateCtaConfig", () => {
     expect(v.valid).toBe(false);
   });
 
-  it("APPLICATION without formTemplateId → error", () => {
+  it("APPLICATION without formTemplateId → warning (not error), still valid", () => {
     const v = validateCtaConfig(makeProduct({ ctaFlow: "APPLICATION", formTemplateId: null, pageProfileId: null }));
-    expect(v.valid).toBe(false);
+    expect(v.valid).toBe(true);
+    expect(v.warnings.some((w) => w.includes("Form Şablonu"))).toBe(true);
   });
 
-  it("APPLICATION with both IDs → valid", () => {
+  it("APPLICATION with both IDs → valid with no warnings about template", () => {
     const v = validateCtaConfig(makeProduct({ ctaFlow: "APPLICATION", formTemplateId: "t", pageProfileId: "p" }));
     expect(v.valid).toBe(true);
+    expect(v.warnings.some((w) => w.includes("Form Şablonu"))).toBe(false);
   });
 
   it("FIXED pricePresentation with price=0 → warning (not error)", () => {
