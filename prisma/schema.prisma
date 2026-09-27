@@ -76,6 +76,21 @@ enum PurchaseMode {
   INVITE_ONLY
 }
 
+enum PricePresentation {
+  FIXED
+  HIDDEN
+  FROM
+  FREE
+}
+
+enum CtaFlow {
+  INFO_ONLY
+  APPLICATION
+  DIRECT_PURCHASE
+  APPLICATION_THEN_PURCHASE
+  FREE_ENROLLMENT
+}
+
 enum ProductGrantType {
   COURSE_ACCESS
   LESSON_ACCESS
@@ -534,7 +549,13 @@ model Product {
   slug           String        @unique
   type           ProductType
   status         ProductStatus @default(DRAFT)
-  purchaseMode   PurchaseMode  @default(DIRECT_PURCHASE)
+  purchaseMode      PurchaseMode      @default(DIRECT_PURCHASE)
+  pricePresentation PricePresentation @default(FIXED)
+  ctaFlow           CtaFlow           @default(DIRECT_PURCHASE)
+  primaryCtaLabelTr   String?
+  primaryCtaLabelEn   String?
+  secondaryCtaLabelTr String?
+  secondaryCtaLabelEn String?
   coverImageUrl  String?
   price          Int           @default(0)
   compareAtPrice Int?
