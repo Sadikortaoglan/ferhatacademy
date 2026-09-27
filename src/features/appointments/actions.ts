@@ -74,18 +74,18 @@ export async function createAppointmentRequest(
     select: { id: true },
   });
 
-  // Create admin notifications
+  // Create admin notifications (fire and forget — don't block emails if this fails)
   if (admins.length > 0) {
-    await prisma.adminNotification.createMany({
+    prisma.adminNotification.createMany({
       data: admins.map((admin) => ({
         recipientUserId: admin.id,
         type: "APPOINTMENT_REQUEST" as const,
         title: "Yeni Randevu Talebi",
         message: `${input.fullName} · ${type.nameTr}`,
         entityType: "AppointmentRequest",
-        entityId: appointment.id,
+        // entityId intentionally omitted — FK constraint ties it to applications table
       })),
-    });
+    }).catch(console.error);
   }
 
   // Send emails (fire and forget — don't fail the request if email fails)
