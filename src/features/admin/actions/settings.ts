@@ -9,7 +9,7 @@ import { revalidatePath } from "next/cache";
 
 const settingsSchema = z.object({
   academyName: z.string().min(1),
-  supportEmail: z.string().email(),
+  supportEmail: z.string().email().optional().or(z.literal("")),
   defaultLocale: z.string().min(1),
   timezone: z.string().min(1),
   bankName: z.string().optional(),
@@ -39,13 +39,14 @@ export async function updateSiteSettings(data: unknown) {
   const parsed = settingsSchema.parse(data);
 
   await Promise.all(
-    Object.entries(parsed).map(([key, value]) =>
-      prisma.siteSetting.upsert({
+    Object.entries(parsed).map(([key, value]) => {
+      const v = value ?? "";
+      return prisma.siteSetting.upsert({
         where: { key },
-        update: { value },
-        create: { key, value },
-      })
-    )
+        update: { value: v },
+        create: { key, value: v },
+      });
+    })
   );
 
   await createAuditLog({
