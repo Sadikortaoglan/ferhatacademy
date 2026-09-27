@@ -4,9 +4,10 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "@/server/commerce";
-import { PublishProductButton, ArchiveProductButton } from "@/features/commerce/components/product-admin-buttons";
+import { ProductStatusActions } from "@/features/commerce/components/product-admin-buttons";
 import { ApplicationConfig } from "./application-config";
 import { ProductSalesConfig } from "@/features/commerce/components/product-sales-config";
+import { ProductContentForm } from "@/features/commerce/components/product-content-form";
 
 export default async function AdminProductDetailPage({
   params,
@@ -42,6 +43,8 @@ export default async function AdminProductDetailPage({
   ]);
   if (!product) notFound();
 
+  const trTrans = product.translations.find((t) => t.locale === "tr") ?? null;
+  const enTrans = product.translations.find((t) => t.locale === "en") ?? null;
   const tr = product.translations.find((t) => t.locale === locale) ?? product.translations[0];
   const statusBadge = product.status === "PUBLISHED" ? "success" as const : product.status === "ARCHIVED" ? "danger" as const : "secondary" as const;
 
@@ -66,6 +69,34 @@ export default async function AdminProductDetailPage({
             <p className="mt-1">{tr.description}</p>
           </div>
         )}
+      </div>
+
+      <div className="border border-border rounded-xl p-5 bg-surface space-y-4">
+        <div>
+          <h2 className="font-bold">İçerik &amp; SEO</h2>
+          <p className="text-xs text-muted-foreground mt-1">Başlık, açıklama, SEO meta etiketleri ve kapak görseli.</p>
+        </div>
+        <ProductContentForm
+          locale={locale}
+          productId={product.id}
+          productStatus={product.status}
+          currentSlug={product.slug}
+          currentCoverImageUrl={product.coverImageUrl ?? null}
+          translationTr={{
+            name: trTrans?.name ?? "",
+            shortDescription: trTrans?.shortDescription ?? "",
+            description: trTrans?.description ?? "",
+            seoTitle: trTrans?.seoTitle ?? "",
+            seoDescription: trTrans?.seoDescription ?? "",
+          }}
+          translationEn={{
+            name: enTrans?.name ?? "",
+            shortDescription: enTrans?.shortDescription ?? "",
+            description: enTrans?.description ?? "",
+            seoTitle: enTrans?.seoTitle ?? "",
+            seoDescription: enTrans?.seoDescription ?? "",
+          }}
+        />
       </div>
 
       <div className="border border-border rounded-xl p-5 bg-surface space-y-3">
@@ -102,11 +133,15 @@ export default async function AdminProductDetailPage({
       </div>
 
       <div className="border border-border rounded-xl p-5 bg-surface space-y-3">
-        <h2 className="font-bold">Yayın İşlemleri</h2>
-        <div className="flex gap-3">
-          {product.status !== "PUBLISHED" && <PublishProductButton productId={product.id} />}
-          {product.status === "PUBLISHED" && <ArchiveProductButton productId={product.id} />}
+        <div>
+          <h2 className="font-bold">Yayın İşlemleri</h2>
+          <p className="text-xs text-muted-foreground mt-1">
+            {product.status === "ARCHIVED"
+              ? "Ürün arşivde. Bağımlı kayıt yoksa kalıcı olarak silinebilir."
+              : "Ürünü yayınla veya arşivle."}
+          </p>
         </div>
+        <ProductStatusActions locale={locale} productId={product.id} productStatus={product.status} />
       </div>
 
       <div className="border border-border rounded-xl p-5 bg-surface space-y-3">
