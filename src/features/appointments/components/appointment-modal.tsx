@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { X, Calendar, Clock, CheckCircle2, Phone, Mail, MessageSquare, Loader2 } from "lucide-react";
 import { createAppointmentRequest, type CreateAppointmentInput } from "../actions";
+import { validatePhone, validateEmail } from "@/lib/validators";
 
 type AppointmentType = { id: string; nameTr: string; nameEn: string; descTr?: string | null; descEn?: string | null; isFree: boolean };
 
@@ -56,8 +57,13 @@ export function AppointmentModal({
   function validate() {
     const errs: Record<string, string> = {};
     if (!form.fullName.trim()) errs.fullName = isTr ? "Ad soyad zorunlu" : "Full name required";
-    if (!form.email.trim() || !form.email.includes("@")) errs.email = isTr ? "Geçerli e-posta gerekli" : "Valid email required";
-    if (!form.phone.trim()) errs.phone = isTr ? "Telefon zorunlu" : "Phone required";
+
+    const emailResult = validateEmail(form.email);
+    if (!emailResult.valid) errs.email = isTr ? "Geçerli bir e-posta adresi girin." : "Please enter a valid email address.";
+
+    const phoneResult = validatePhone(form.phone);
+    if (!phoneResult.valid) errs.phone = isTr ? "Geçerli bir telefon numarası girin." : "Please enter a valid phone number.";
+
     if (!form.typeId) errs.typeId = isTr ? "Görüşme tipi seçin" : "Select a meeting type";
     return errs;
   }
