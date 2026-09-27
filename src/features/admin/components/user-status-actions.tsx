@@ -44,7 +44,7 @@ function ConfirmDialog({
           </button>
           <button
             onClick={onConfirm}
-            className={`px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors ${confirmClass}`}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${confirmClass}`}
           >
             {confirmLabel}
           </button>
@@ -77,11 +77,11 @@ export function UserStatusActions({ userId, isBanned, banReason }: Props) {
           <span
             className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
               isBanned
-                ? "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400"
-                : "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400"
+                ? "bg-danger-subtle text-danger-subtle-foreground border border-danger/30"
+                : "bg-success-subtle text-success-subtle-foreground border border-success/30"
             }`}
           >
-            <span className={`w-1.5 h-1.5 rounded-full ${isBanned ? "bg-red-500" : "bg-emerald-500"}`} />
+            <span className={`w-1.5 h-1.5 rounded-full ${isBanned ? "bg-danger" : "bg-success"}`} />
             {isBanned ? t("userStatusInactive") : t("userStatusActive")}
           </span>
           {isBanned && banReason && (
@@ -93,7 +93,7 @@ export function UserStatusActions({ userId, isBanned, banReason }: Props) {
           <button
             disabled={isPending}
             onClick={() => setDialog("activate")}
-            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-success text-success-foreground hover:opacity-90 disabled:opacity-50 transition-colors"
           >
             {isPending ? "..." : t("activateUser")}
           </button>
@@ -101,7 +101,7 @@ export function UserStatusActions({ userId, isBanned, banReason }: Props) {
           <button
             disabled={isPending}
             onClick={() => setDialog("deactivate")}
-            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-colors"
+            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-danger text-danger-foreground hover:opacity-90 disabled:opacity-50 transition-colors"
           >
             {isPending ? "..." : t("deactivateUser")}
           </button>
@@ -113,7 +113,7 @@ export function UserStatusActions({ userId, isBanned, banReason }: Props) {
         title={t("confirmDeactivateTitle")}
         description={t("confirmDeactivate")}
         confirmLabel={t("deactivateUser")}
-        confirmClass="bg-red-600 hover:bg-red-700"
+        confirmClass="bg-danger text-danger-foreground hover:opacity-90"
         onConfirm={handleConfirm}
         onCancel={() => setDialog(null)}
       />
@@ -122,7 +122,7 @@ export function UserStatusActions({ userId, isBanned, banReason }: Props) {
         title={t("confirmActivateTitle")}
         description={t("confirmActivate")}
         confirmLabel={t("activateUser")}
-        confirmClass="bg-emerald-600 hover:bg-emerald-700"
+        confirmClass="bg-success text-success-foreground hover:opacity-90"
         onConfirm={handleConfirm}
         onCancel={() => setDialog(null)}
       />
