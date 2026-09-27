@@ -46,6 +46,8 @@ enum AuditAction {
   ENTITLEMENT_CREATED_FROM_ORDER
   USER_ACTIVATED
   USER_DEACTIVATED
+  APPOINTMENT_REQUEST_CREATED
+  APPOINTMENT_STATUS_UPDATED
 }
 
 enum ProductType {
@@ -127,6 +129,15 @@ enum PresentationStyle {
 enum AdminNotificationType {
   APPLICATION_SUBMITTED
   APPLICATION_REVIEW_STARTED
+  APPOINTMENT_REQUEST
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+  COMPLETED
+  CANCELLED
 }
 
 enum QuestionSection {
@@ -544,6 +555,7 @@ model Product {
   linkedCourse  Course?                  @relation(fields: [linkedCourseId], references: [id])
   formTemplate  ApplicationFormTemplate? @relation("ProductFormTemplate", fields: [formTemplateId], references: [id])
   pageProfile   ApplicationPageProfile?  @relation("ProductPageProfile", fields: [pageProfileId], references: [id])
+  appointments  AppointmentRequest[]     @relation("ProductAppointments")
 
   @@map("products")
 }
@@ -925,4 +937,51 @@ model AdminNotification {
   application Application? @relation(fields: [entityId], references: [id], onDelete: SetNull, map: "admin_notification_application_fk")
 
   @@map("admin_notifications")
+}
+
+model AppointmentType {
+  id              String   @id @default(cuid())
+  key             String   @unique
+  nameTr          String
+  nameEn          String
+  descTr          String?
+  descEn          String?
+  durationMinutes Int?
+  isFree          Boolean  @default(true)
+  active          Boolean  @default(true)
+  position        Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  appointments AppointmentRequest[]
+
+  @@map("appointment_types")
+}
+
+model AppointmentRequest {
+  id                  String            @id @default(cuid())
+  fullName            String
+  email               String
+  phone               String?
+  locale              String            @default("tr")
+  typeId              String
+  preferredDate       DateTime?
+  preferredTimeRange  String?
+  note                String?
+  status              AppointmentStatus @default(PENDING)
+  sourcePage          String?
+  utmSource           String?
+  utmMedium           String?
+  utmCampaign         String?
+  utmContent          String?
+  utmTerm             String?
+  adminNote           String?
+  productId           String?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  type    AppointmentType @relation(fields: [typeId], references: [id])
+  product Product?        @relation("ProductAppointments", fields: [productId], references: [id], onDelete: SetNull)
+
+  @@map("appointment_requests")
 }

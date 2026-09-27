@@ -349,7 +349,8 @@
     "searchPlaceholder": "Search by name or email...",
     "accountBanned": "This account has been deactivated.",
     "banReason": "Reason",
-    "appProfiles": "Application Pages"
+    "appProfiles": "Application Pages",
+    "appointments": "Appointments"
   },
   "errors": {
     "notFound": "Page not found",

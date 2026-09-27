@@ -59,6 +59,13 @@ export function PublicHeader({ locale, user }: PublicHeaderProps) {
             {otherLocale}
           </Link>
 
+          <Link
+            href={`/${locale}/randevu`}
+            className="flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-bold text-white hover:bg-primary/90 transition-colors"
+          >
+            📅 {locale === "tr" ? "Randevu Al" : "Book a Call"}
+          </Link>
+
           {user ? (
             <>
               {isAdmin && (
@@ -120,6 +127,13 @@ export function PublicHeader({ locale, user }: PublicHeaderProps) {
                 {link.label}
               </Link>
             ))}
+            <Link
+              href={`/${locale}/randevu`}
+              onClick={() => setMobileOpen(false)}
+              className="flex items-center justify-center gap-1.5 rounded-full bg-primary px-4 py-2.5 text-sm font-bold text-white"
+            >
+              📅 {locale === "tr" ? "Randevu Al" : "Book a Call"}
+            </Link>
             <div className="border-t border-border mt-2 pt-3 flex flex-col gap-2">
               {user ? (
                 <>

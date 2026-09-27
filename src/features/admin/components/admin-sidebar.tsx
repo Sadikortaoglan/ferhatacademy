@@ -19,6 +19,7 @@ import {
   UserCircle,
   Globe,
   Palette,
+  CalendarClock,
 } from "lucide-react";
 
 const getNavItems = (locale: string) => [
@@ -26,6 +27,7 @@ const getNavItems = (locale: string) => [
   { href: `/${locale}/admin/users`, label: "admin.users", icon: Users, exact: false },
   { href: `/${locale}/admin/courses`, label: "admin.courses", icon: BookOpen, exact: false },
   { href: `/${locale}/admin/products`, label: "admin.products", icon: ShoppingBag, exact: false },
+  { href: `/${locale}/admin/appointments`, label: "admin.appointments", icon: CalendarClock, exact: false },
   { href: `/${locale}/admin/applications`, label: "admin.applications", icon: FileText, exact: false },
   { href: `/${locale}/admin/applications/templates`, label: "admin.formTemplates", icon: FileText, exact: false },
   { href: `/${locale}/admin/applications/settings`, label: "admin.applicationSettings", icon: FileText, exact: false },
