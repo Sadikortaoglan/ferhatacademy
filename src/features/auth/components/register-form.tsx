@@ -25,7 +25,7 @@ const registerSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
   password: z.string().min(8),
-  phone: z.string().optional(),
+  phone: z.string().min(1, "Telefon zorunludur"),
   birthDate: z.string().optional(),
   city: z.string().optional(),
 });
@@ -66,16 +66,13 @@ export function RegisterForm({ locale }: { locale: string }) {
         setError(result.error.message ?? t("error"));
         return;
       }
-      // Save extra profile fields
-      if (data.phone || data.birthDate || data.city || selectedGoals.length > 0) {
-        await updateProfile({
-          name: data.name,
-          phone: data.phone,
-          birthDate: data.birthDate,
-          city: data.city,
-          whyHere: selectedGoals.join(","),
-        });
-      }
+      await updateProfile({
+        name: data.name,
+        phone: data.phone,
+        birthDate: data.birthDate,
+        city: data.city,
+        whyHere: selectedGoals.length > 0 ? selectedGoals.join(",") : undefined,
+      });
       router.push(`/${locale}/dashboard`);
       router.refresh();
     } catch {
@@ -104,14 +101,27 @@ export function RegisterForm({ locale }: { locale: string }) {
         {errors.password && <p className="text-xs text-danger">{t("passwordMin")}</p>}
       </div>
 
+      <div className="space-y-2">
+        <Label htmlFor="phone">Telefon *</Label>
+        <Input
+          id="phone"
+          type="tel"
+          inputMode="numeric"
+          placeholder="+90 5XX XXX XX XX"
+          autoComplete="tel"
+          onInput={(e) => {
+            const t = e.currentTarget;
+            t.value = t.value.replace(/[^\d+\s\-().]/g, "");
+          }}
+          {...register("phone")}
+        />
+        {errors.phone && <p className="text-xs text-danger">{errors.phone.message}</p>}
+      </div>
+
       {/* Opsiyonel alanlar */}
       <div className="pt-1 border-t border-border">
         <p className="text-xs text-muted-foreground mb-3">Opsiyonel — istersen doldur, sonra da profilden değiştirebilirsin</p>
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="phone" className="text-sm">Telefon</Label>
-            <Input id="phone" type="tel" placeholder="+90 5XX..." {...register("phone")} />
-          </div>
           <div className="space-y-1.5">
             <Label htmlFor="city" className="text-sm">Şehir</Label>
             <Input id="city" type="text" placeholder="İstanbul..." {...register("city")} />

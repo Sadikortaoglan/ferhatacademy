@@ -208,8 +208,13 @@ export function AppointmentModal({
               <label className="block text-xs text-white/50 mb-1.5">{isTr ? "Telefon *" : "Phone *"}</label>
               <input
                 type="tel"
+                inputMode="numeric"
                 value={form.phone}
                 onChange={set("phone")}
+                onInput={(e) => {
+                  const t = e.currentTarget;
+                  t.value = t.value.replace(/[^\d+\s\-().]/g, "");
+                }}
                 placeholder="+90 5XX XXX XX XX"
                 className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-orange-500/50"
               />
