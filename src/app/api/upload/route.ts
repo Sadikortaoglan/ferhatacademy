@@ -10,7 +10,7 @@ import sharp from "sharp";
 const MAX_SIZE = 10 * 1024 * 1024; // 10 MB (before optimization)
 const MAX_DIMENSION = 2400; // px — longest edge
 
-// Güvenli MIME whitelist
+// Güvenli MIME whitelist — client'tan gelen MIME güvenilmez, sadece whitelist kontrolü
 const SAFE_MIME_EXT: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",
@@ -18,6 +18,11 @@ const SAFE_MIME_EXT: Record<string, string> = {
   "image/gif": "gif",
   "image/avif": "avif",
 };
+
+// Explicit extension whitelist — prevents path traversal (CWE-22).
+// ext is always derived from SAFE_MIME_EXT above (not user input), so this is
+// a belt-and-suspenders check that also silences static-analysis tools.
+const SAFE_EXTENSIONS = new Set(["jpg", "png", "webp", "gif", "avif"]);
 
 // Magic byte imzaları — MIME doğrulama
 const MAGIC: Record<string, number[][]> = {
@@ -99,6 +104,11 @@ export async function POST(req: NextRequest) {
     // Fallback: save original if optimization fails
     optimized = buffer;
     ext = SAFE_MIME_EXT[declaredMime];
+  }
+
+  // Belt-and-suspenders: verify ext is in the safe set before path construction
+  if (!SAFE_EXTENSIONS.has(ext)) {
+    return NextResponse.json({ error: "Geçersiz dosya uzantısı." }, { status: 400 });
   }
 
   const filename = `${randomUUID()}.${ext}`;

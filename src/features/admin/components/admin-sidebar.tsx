@@ -20,6 +20,7 @@ import {
   Globe,
   Palette,
   CalendarClock,
+  LayoutTemplate,
 } from "lucide-react";
 
 const getNavItems = (locale: string) => [
@@ -37,6 +38,7 @@ const getNavItems = (locale: string) => [
   { href: `/${locale}/admin/access`, label: "admin.access", icon: ShieldCheck, exact: false },
   { href: `/${locale}/admin/audit`, label: "admin.auditLog", icon: ScrollText, exact: false },
   { href: `/${locale}/admin/about`, label: "admin.aboutPage", icon: UserCircle, exact: false },
+  { href: `/${locale}/admin/website/homepage`, label: "admin.homepage", icon: LayoutTemplate, exact: false },
   { href: `/${locale}/admin/website/navigation`, label: "admin.navigation", icon: Globe, exact: false },
   { href: `/${locale}/admin/website/appearance`, label: "admin.appearance", icon: Palette, exact: false },
   { href: `/${locale}/admin/settings`, label: "admin.settings", icon: Settings, exact: false },

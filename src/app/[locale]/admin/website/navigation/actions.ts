@@ -4,12 +4,13 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth";
 import { z } from "zod";
+import { isAllowedNavHref } from "@/lib/url-validation";
 
 const navItemSchema = z.object({
   key: z.string().min(1).max(60).regex(/^[a-z0-9_-]+$/),
   labelTr: z.string().min(1),
   labelEn: z.string().min(1),
-  href: z.string().min(1),
+  href: z.string().min(1).refine(isAllowedNavHref, "Geçerli bir bağlantı girin. (/ veya https:// ile başlamalı)"),
   position: z.number().int().default(0),
   enabled: z.boolean().default(true),
   showInNavbar: z.boolean().default(true),

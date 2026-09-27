@@ -350,7 +350,8 @@
     "accountBanned": "This account has been deactivated.",
     "banReason": "Reason",
     "appProfiles": "Application Pages",
-    "appointments": "Appointments"
+    "appointments": "Appointments",
+    "homepage": "Homepage"
   },
   "errors": {
     "notFound": "Page not found",

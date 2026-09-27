@@ -350,7 +350,8 @@
     "accountBanned": "Bu hesap pasifleştirildi.",
     "banReason": "Sebep",
     "appProfiles": "Başvuru Sayfaları",
-    "appointments": "Randevular"
+    "appointments": "Randevular",
+    "homepage": "Ana Sayfa"
   },
   "errors": {
     "notFound": "Sayfa bulunamadı",

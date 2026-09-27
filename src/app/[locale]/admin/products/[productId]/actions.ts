@@ -131,18 +131,30 @@ export async function archiveProductById(locale: string, productId: string) {
 export async function deleteProductById(locale: string, productId: string) {
   await requireAdmin(locale);
 
-  const [orderCount, applicationCount] = await Promise.all([
-    prisma.orderItem.count({ where: { productId } }),
-    prisma.application.count({ where: { productId } }),
-  ]);
-
-  if (orderCount > 0 || applicationCount > 0) {
-    return {
-      ok: false as const,
-      reason: `Bu ürün silinemez: ${orderCount} sipariş kalemi ve ${applicationCount} başvuru bağlı.`,
-    };
+  try {
+    await prisma.$transaction(async (tx) => {
+      const [orderCount, applicationCount] = await Promise.all([
+        tx.orderItem.count({ where: { productId } }),
+        tx.application.count({ where: { productId } }),
+      ]);
+      if (orderCount > 0 || applicationCount > 0) {
+        throw Object.assign(new Error("DEPENDENCY_EXISTS"), {
+          orderCount,
+          applicationCount,
+        });
+      }
+      await tx.product.delete({ where: { id: productId } });
+    });
+  } catch (err) {
+    if (err instanceof Error && err.message === "DEPENDENCY_EXISTS") {
+      const e = err as Error & { orderCount: number; applicationCount: number };
+      return {
+        ok: false as const,
+        reason: `Bu ürün silinemez: ${e.orderCount} sipariş kalemi ve ${e.applicationCount} başvuru bağlı.`,
+      };
+    }
+    throw err;
   }
 
-  await prisma.product.delete({ where: { id: productId } });
   redirect(`/${locale}/admin/products`);
 }
