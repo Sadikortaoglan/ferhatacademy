@@ -47,7 +47,11 @@ export const auth = betterAuth({
     }),
   ],
   secret: process.env.BETTER_AUTH_SECRET!,
+  // Canonical origin — must match the domain serving the app
   baseURL: process.env.BETTER_AUTH_URL!,
+  // After nginx www→non-www redirect, the app only ever receives requests from
+  // the canonical origin. No need to list www here — nginx redirects before
+  // the request reaches the app.
 });
 
 export type Session = typeof auth.$Infer.Session;
