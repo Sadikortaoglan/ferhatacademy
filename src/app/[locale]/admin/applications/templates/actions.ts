@@ -184,11 +184,21 @@ export async function deleteQuestion(locale: string, templateId: string, questio
 
 export async function reorderQuestions(locale: string, templateId: string, orderedIds: string[]) {
   await requireAdmin(locale);
-  await Promise.all(
-    orderedIds.map((id, idx) =>
-      prisma.applicationQuestion.update({ where: { id }, data: { position: idx } })
-    )
-  );
+  await prisma.$transaction(async (tx) => {
+    // Ownership check: every ID must belong to this template
+    const owned = await tx.applicationQuestion.findMany({
+      where: { id: { in: orderedIds }, templateId },
+      select: { id: true },
+    });
+    if (owned.length !== orderedIds.length) {
+      throw new Error("Geçersiz soru ID'leri.");
+    }
+    await Promise.all(
+      orderedIds.map((id, idx) =>
+        tx.applicationQuestion.update({ where: { id }, data: { position: idx } })
+      )
+    );
+  });
   revalidatePath(`/${locale}/admin/applications/templates/${templateId}`);
   return { ok: true };
 }
@@ -223,11 +233,21 @@ export async function deleteOption(locale: string, optionId: string) {
 
 export async function reorderOptions(locale: string, questionId: string, orderedIds: string[]) {
   await requireAdmin(locale);
-  await Promise.all(
-    orderedIds.map((id, idx) =>
-      prisma.applicationQuestionOption.update({ where: { id }, data: { position: idx } })
-    )
-  );
+  await prisma.$transaction(async (tx) => {
+    // Ownership check: every option ID must belong to this question
+    const owned = await tx.applicationQuestionOption.findMany({
+      where: { id: { in: orderedIds }, questionId },
+      select: { id: true },
+    });
+    if (owned.length !== orderedIds.length) {
+      throw new Error("Geçersiz seçenek ID'leri.");
+    }
+    await Promise.all(
+      orderedIds.map((id, idx) =>
+        tx.applicationQuestionOption.update({ where: { id }, data: { position: idx } })
+      )
+    );
+  });
   return { ok: true };
 }
 
@@ -271,11 +291,21 @@ export async function deleteStep(locale: string, templateId: string, stepId: str
 
 export async function reorderSteps(locale: string, templateId: string, orderedIds: string[]) {
   await requireAdmin(locale);
-  await Promise.all(
-    orderedIds.map((id, idx) =>
-      prisma.applicationFormStep.update({ where: { id }, data: { position: idx } })
-    )
-  );
+  await prisma.$transaction(async (tx) => {
+    // Ownership check: every step ID must belong to this template
+    const owned = await tx.applicationFormStep.findMany({
+      where: { id: { in: orderedIds }, templateId },
+      select: { id: true },
+    });
+    if (owned.length !== orderedIds.length) {
+      throw new Error("Geçersiz adım ID'leri.");
+    }
+    await Promise.all(
+      orderedIds.map((id, idx) =>
+        tx.applicationFormStep.update({ where: { id }, data: { position: idx } })
+      )
+    );
+  });
   revalidatePath(`/${locale}/admin/applications/templates/${templateId}`);
   return { ok: true };
 }
