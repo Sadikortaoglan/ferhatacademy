@@ -83,7 +83,7 @@ export async function createAppointmentRequest(
         title: "Yeni Randevu Talebi",
         message: `${input.fullName} · ${type.nameTr}`,
         entityType: "AppointmentRequest",
-        entityId: appointment.id,
+        // entityId has a FK to applications table — appointment IDs are not applications
       })),
     });
   }
