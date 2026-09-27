@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { getSession } from "@/server/auth";
 import { PageHeader } from "@/components/shared/page-header";
 import { RoleBadge } from "@/components/shared/status-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +12,8 @@ import { ActionLink } from "@/components/shared/admin-actions";
 import { GrantAccessDialog } from "@/features/admin/components/grant-access-dialog";
 import { RevokeAccessButton } from "@/features/admin/components/revoke-access-button";
 import { UserStatusActions } from "@/features/admin/components/user-status-actions";
+import { RoleManagement } from "@/features/admin/components/role-management";
+import { Role } from "@prisma/client";
 
 export default async function AdminUserDetailPage({
   params,
@@ -22,6 +25,11 @@ export default async function AdminUserDetailPage({
   const { locale, userId } = await params;
   const { tab = "overview" } = await searchParams;
   const t = await getTranslations("admin");
+
+  const session = await getSession();
+  const actor = session?.user
+    ? await prisma.user.findUnique({ where: { id: session.user.id }, select: { id: true, role: true } })
+    : null;
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -83,6 +91,26 @@ export default async function AdminUserDetailPage({
               </p>
             </div>
           )}
+
+          {/* Hesap Yetkisi — Role Management */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Hesap Yetkisi</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {actor ? (
+                <RoleManagement
+                  targetUserId={user.id}
+                  targetUserName={user.name ?? user.email}
+                  targetCurrentRole={user.role as Role}
+                  actorRole={actor.role as Role}
+                  actorId={actor.id}
+                />
+              ) : (
+                <p className="text-sm text-muted-foreground">Yetkilendirme bilgisi alınamadı.</p>
+              )}
+            </CardContent>
+          </Card>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
