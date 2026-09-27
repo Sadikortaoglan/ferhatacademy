@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { sendAppointmentConfirmationToUser, sendAppointmentNotificationToAdmin } from "@/lib/email";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
+import { validateEmail, validatePhone, normalizePhone } from "@/lib/validators";
 
 export type CreateAppointmentInput = {
   fullName: string;
@@ -35,10 +36,16 @@ export async function getActiveAppointmentTypes() {
 export async function createAppointmentRequest(
   input: CreateAppointmentInput
 ): Promise<CreateAppointmentResult> {
-  // Basic validation
+  // Server-side validation (authoritative — do not trust client normalization)
   if (!input.fullName?.trim()) return { ok: false, error: "fullName required" };
-  if (!input.email?.trim() || !input.email.includes("@")) return { ok: false, error: "valid email required" };
   if (!input.typeId) return { ok: false, error: "typeId required" };
+
+  const emailResult = validateEmail(input.email ?? "");
+  if (!emailResult.valid) return { ok: false, error: "Geçerli bir e-posta adresi girin." };
+
+  // Phone is required for appointments
+  const phoneResult = validatePhone(input.phone ?? "");
+  if (!phoneResult.valid) return { ok: false, error: "Geçerli bir telefon numarası girin." };
 
   const type = await prisma.appointmentType.findUnique({ where: { id: input.typeId, active: true } });
   if (!type) return { ok: false, error: "invalid appointment type" };
@@ -46,8 +53,8 @@ export async function createAppointmentRequest(
   const appointment = await prisma.appointmentRequest.create({
     data: {
       fullName: input.fullName.trim(),
-      email: input.email.trim().toLowerCase(),
-      phone: input.phone?.trim() || null,
+      email: emailResult.normalized,
+      phone: phoneResult.e164,
       typeId: input.typeId,
       preferredDate: input.preferredDate ? new Date(input.preferredDate) : null,
       preferredTimeRange: input.preferredTimeRange || null,

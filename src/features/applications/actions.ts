@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { validatePhone, validateEmail } from "@/lib/validators";
 import {
   sendApplicationSubmittedToApplicant,
   sendApplicationSubmittedToAdmin,
@@ -50,6 +51,26 @@ function buildZodSchema(
         break;
       case "BOOLEAN":
         field = z.enum(["true", "false"]);
+        break;
+      case "PHONE":
+        field = z.string().superRefine((val, ctx) => {
+          if (!val) return; // required check handled below
+          const r = validatePhone(val);
+          if (!r.valid) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Geçerli bir telefon numarası girin." });
+        }).transform((val) => {
+          const r = validatePhone(val);
+          return r.valid ? r.e164 : val;
+        });
+        break;
+      case "EMAIL":
+        field = z.string().superRefine((val, ctx) => {
+          if (!val) return;
+          const r = validateEmail(val);
+          if (!r.valid) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Geçerli bir e-posta adresi girin." });
+        }).transform((val) => {
+          const r = validateEmail(val);
+          return r.valid ? r.normalized : val;
+        });
         break;
       default:
         field = z.string();
