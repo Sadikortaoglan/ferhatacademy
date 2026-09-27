@@ -25,6 +25,95 @@ async function requireAdminUser() {
   return dbUser;
 }
 
+/**
+ * Creates an order AND immediately reports the payment in one step.
+ * This is used by the checkout form after the user clicks "Ödemeyi Yaptım".
+ * Order must NOT be created before this point.
+ */
+export async function createOrderAndReportPayment(
+  productId: string,
+  locale: string,
+  paymentData: { method: string; transferReference?: string; userNote?: string },
+) {
+  const sessionUser = await getSessionUser();
+  const product = await prisma.product.findUnique({
+    where: { id: productId },
+    include: { translations: true, grants: true },
+  });
+  if (!product || product.status !== "PUBLISHED") throw new Error("Product not available");
+
+  if (product.purchaseMode === "APPLICATION_REQUIRED_BEFORE_PURCHASE") {
+    const app = await prisma.application.findUnique({ where: { userId_productId: { userId: sessionUser.id, productId } } });
+    if (!app || app.status !== "APPROVED") throw new Error("Application approval required");
+  }
+
+  // Idempotent: if user already has a pending/review order, attach payment to it
+  const existingOrder = await prisma.order.findFirst({
+    where: { userId: sessionUser.id, status: { in: ["PENDING_PAYMENT", "PAYMENT_REVIEW"] }, items: { some: { productId } } },
+  });
+
+  let order = existingOrder;
+  if (!order) {
+    const translation = product.translations.find((t) => t.locale === locale) ?? product.translations[0];
+    const reference = formatOrderReference();
+    order = await prisma.order.create({
+      data: {
+        reference,
+        userId: sessionUser.id,
+        status: "PENDING_PAYMENT",
+        totalAmount: product.price,
+        currency: product.currency,
+        items: {
+          create: [{
+            productId: product.id,
+            productNameSnapshot: translation?.name ?? product.slug,
+            productTypeSnapshot: product.type,
+            unitPrice: product.price,
+            quantity: 1,
+            currency: product.currency,
+          }],
+        },
+      },
+    });
+    await createAuditLog({ action: "ORDER_CREATED", actorId: sessionUser.id, targetId: order.id, targetType: "Order" });
+  }
+
+  // Report the payment
+  const payment = await prisma.payment.create({
+    data: {
+      orderId: order.id,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      method: paymentData.method as any,
+      status: "REPORTED",
+      amount: order.totalAmount,
+      currency: order.currency,
+      transferReference: paymentData.transferReference,
+      userNote: paymentData.userNote,
+      reportedAt: new Date(),
+    },
+  });
+  await prisma.order.update({ where: { id: order.id }, data: { status: "PAYMENT_REVIEW" } });
+  await createAuditLog({ action: "PAYMENT_REPORTED", actorId: sessionUser.id, targetId: payment.id, targetType: "Payment" });
+  revalidatePath("/[locale]/dashboard/purchases", "page");
+
+  try {
+    const orderWithItems = await prisma.order.findUnique({
+      where: { id: order.id },
+      include: { items: { take: 1 }, user: true },
+    });
+    if (orderWithItems) {
+      const productName = orderWithItems.items[0]?.productNameSnapshot ?? "";
+      const amountStr = formatPrice(orderWithItems.totalAmount, orderWithItems.currency, "tr");
+      await Promise.all([
+        sendPaymentReceivedToCustomer({ to: orderWithItems.user.email, name: orderWithItems.user.name ?? "", orderReference: orderWithItems.reference, productName, amount: amountStr, locale: "tr" }),
+        sendPaymentNotificationToAdmin({ customerName: orderWithItems.user.name ?? "", customerEmail: orderWithItems.user.email, orderReference: orderWithItems.reference, productName, amount: amountStr }),
+      ]);
+    }
+  } catch { /* mail hatası işlemi engellemesin */ }
+
+  return { id: order.id, reference: order.reference };
+}
+
 export async function createOrder(productId: string, locale: string) {
   const sessionUser = await getSessionUser();
   const product = await prisma.product.findUnique({

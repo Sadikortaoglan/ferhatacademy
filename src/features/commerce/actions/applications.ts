@@ -26,7 +26,7 @@ async function requireAdminUser() {
 }
 
 const applicationSchema = z.object({
-  phone: z.string().optional(),
+  phone: z.string().min(1, "Telefon zorunludur"),
   currentExperience: z.string().optional(),
   currentSituation: z.string().optional(),
   goal: z.string().min(1),

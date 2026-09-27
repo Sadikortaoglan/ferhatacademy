@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { createOrder, enrollFree, reportPayment } from "@/features/commerce/actions/orders";
+import { createOrderAndReportPayment, enrollFree } from "@/features/commerce/actions/orders";
 
 interface CheckoutFormProps {
   productId: string;
@@ -18,8 +18,8 @@ interface CheckoutFormProps {
 
 export function CheckoutForm({ productId, locale, isFree, bankName, iban, accountHolder, paymentInstructions }: CheckoutFormProps) {
   const router = useRouter();
+  // "bank_details" shows bank info — NO order created yet until user confirms payment
   const [step, setStep] = useState<"method" | "bank_details" | "done">("method");
-  const [orderId, setOrderId] = useState<string | null>(null);
   const [orderRef, setOrderRef] = useState<string | null>(null);
   const [transferRef, setTransferRef] = useState("");
   const [userNote, setUserNote] = useState("");
@@ -34,22 +34,19 @@ export function CheckoutForm({ productId, locale, isFree, bankName, iban, accoun
     finally { setLoading(false); }
   };
 
-  const handleBankTransfer = async () => {
-    setLoading(true);
-    try {
-      const order = await createOrder(productId, locale);
-      setOrderId(order.id);
-      setOrderRef(order.reference);
-      setStep("bank_details");
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
-  };
+  // Only show bank details — do NOT create order yet
+  const handleShowBankDetails = () => setStep("bank_details");
 
-  const handleReportPayment = async () => {
-    if (!orderId) return;
+  // Order is created + payment reported only when user explicitly confirms
+  const handleConfirmPayment = async () => {
     setLoading(true);
     try {
-      await reportPayment(orderId, { method: "BANK_TRANSFER", transferReference: transferRef, userNote });
+      const result = await createOrderAndReportPayment(productId, locale, {
+        method: "BANK_TRANSFER",
+        transferReference: transferRef || undefined,
+        userNote: userNote || undefined,
+      });
+      setOrderRef(result.reference);
       setStep("done");
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
@@ -89,11 +86,13 @@ export function CheckoutForm({ productId, locale, isFree, bankName, iban, accoun
             {bankName && <p><span className="text-muted-foreground">{locale === "tr" ? "Banka:" : "Bank:"}</span> {bankName}</p>}
             {accountHolder && <p><span className="text-muted-foreground">{locale === "tr" ? "Hesap Sahibi:" : "Account Holder:"}</span> {accountHolder}</p>}
             {iban && <p><span className="text-muted-foreground">IBAN:</span> <span className="font-mono">{iban}</span></p>}
-            <p className="mt-2 font-medium text-yellow-600 dark:text-yellow-400">
-              {locale === "tr" ? "Açıklama:" : "Description:"} <span className="font-mono">{orderRef}</span>
-            </p>
           </div>
           {paymentInstructions && <p className="text-sm text-muted-foreground">{paymentInstructions}</p>}
+        </div>
+        <div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/20 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
+          {locale === "tr"
+            ? "Havaleyi yaptıktan sonra aşağıdaki butona basın. Buton tıklanmadan sisteme bildirim gitmez."
+            : "After making the transfer, click the button below. Your payment won't be recorded until you confirm."}
         </div>
         <div className="space-y-4">
           <div className="space-y-2">
@@ -104,9 +103,16 @@ export function CheckoutForm({ productId, locale, isFree, bankName, iban, accoun
             <Label>{locale === "tr" ? "Not (opsiyonel)" : "Note (optional)"}</Label>
             <Input value={userNote} onChange={(e) => setUserNote(e.target.value)} />
           </div>
-          <Button onClick={handleReportPayment} disabled={loading} className="w-full">
-            {loading ? "..." : (locale === "tr" ? "Ödemeyi Yaptım" : "I Made the Payment")}
+          <Button onClick={handleConfirmPayment} disabled={loading} className="w-full">
+            {loading ? "..." : (locale === "tr" ? "Ödemeyi Yaptım, Bildir" : "I Made the Payment")}
           </Button>
+          <button
+            type="button"
+            onClick={() => setStep("method")}
+            className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {locale === "tr" ? "← Geri" : "← Back"}
+          </button>
         </div>
       </div>
     );
@@ -115,7 +121,7 @@ export function CheckoutForm({ productId, locale, isFree, bankName, iban, accoun
   return (
     <div className="space-y-4">
       <h2 className="font-bold">{locale === "tr" ? "Ödeme Yöntemi" : "Payment Method"}</h2>
-      <Button onClick={handleBankTransfer} disabled={loading} variant="outline" className="w-full justify-start h-auto p-4">
+      <Button onClick={handleShowBankDetails} variant="outline" className="w-full justify-start h-auto p-4">
         <div className="text-left">
           <div className="font-semibold">{locale === "tr" ? "Havale / EFT" : "Bank Transfer"}</div>
           <div className="text-sm text-muted-foreground">{locale === "tr" ? "Banka havalesi ile ödeme yapın" : "Pay via bank transfer"}</div>
