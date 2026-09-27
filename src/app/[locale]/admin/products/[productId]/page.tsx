@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "@/server/commerce";
 import { PublishProductButton, ArchiveProductButton } from "@/features/commerce/components/product-admin-buttons";
 import { ApplicationConfig } from "./application-config";
+import { ProductSalesConfig } from "@/features/commerce/components/product-sales-config";
 
 export default async function AdminProductDetailPage({
   params,
@@ -106,6 +107,29 @@ export default async function AdminProductDetailPage({
           {product.status !== "PUBLISHED" && <PublishProductButton productId={product.id} />}
           {product.status === "PUBLISHED" && <ArchiveProductButton productId={product.id} />}
         </div>
+      </div>
+
+      <div className="border border-border rounded-xl p-5 bg-surface space-y-3">
+        <h2 className="font-bold">Satış &amp; Başvuru</h2>
+        <p className="text-xs text-muted-foreground">Fiyat gösterimi, müşteri akışı ve CTA buton yapılandırması.</p>
+        <ProductSalesConfig
+          locale={locale}
+          productId={product.id}
+          productSlug={product.slug}
+          current={{
+            pricePresentation: product.pricePresentation,
+            ctaFlow: product.ctaFlow,
+            price: product.price,
+            currency: product.currency,
+            primaryCtaLabelTr: product.primaryCtaLabelTr ?? null,
+            primaryCtaLabelEn: product.primaryCtaLabelEn ?? null,
+            secondaryCtaLabelTr: product.secondaryCtaLabelTr ?? null,
+            secondaryCtaLabelEn: product.secondaryCtaLabelEn ?? null,
+            linkedCourseId: product.linkedCourseId ?? null,
+            formTemplateId: product.formTemplateId ?? null,
+            pageProfileId: product.pageProfileId ?? null,
+          }}
+        />
       </div>
 
       <div className="border border-border rounded-xl p-5 bg-surface space-y-3">
