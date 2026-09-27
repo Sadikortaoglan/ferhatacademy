@@ -39,3 +39,6 @@ next-env.d.ts
 
 # uploaded user files (never commit)
 /public/uploads/
+
+# Local MCP server config
+.mcp.json
