@@ -7,7 +7,7 @@ import { z } from "zod";
 import { submitApplication } from "@/features/commerce/actions/applications";
 
 const schema = z.object({
-  phone: z.string().optional(),
+  phone: z.string().min(1, "Telefon zorunludur"),
   goal: z.string().min(10, "En az 10 karakter giriniz"),
   whyInterested: z.string().min(10, "En az 10 karakter giriniz"),
   mainChallenge: z.string().optional(),
@@ -44,14 +44,23 @@ export function LegacyApplicationForm({ productId, locale, ctaLabel, onSuccess }
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
       <div className="space-y-1">
         <label className="block text-sm font-semibold text-foreground">
-          {locale === "tr" ? "Telefon (opsiyonel)" : "Phone (optional)"}
+          {locale === "tr" ? "Telefon" : "Phone"}{" "}
+          <span className="text-danger" aria-hidden>*</span>
         </label>
         <input
           type="tel"
+          inputMode="numeric"
           className={inputClass}
           placeholder="+90 5XX XXX XX XX"
+          onInput={(e) => {
+            const t = e.currentTarget;
+            t.value = t.value.replace(/[^\d+\s\-().]/g, "");
+          }}
           {...register("phone")}
         />
+        {errors.phone && (
+          <p className="text-xs text-danger" role="alert">{errors.phone.message}</p>
+        )}
       </div>
 
       <div className="space-y-1">

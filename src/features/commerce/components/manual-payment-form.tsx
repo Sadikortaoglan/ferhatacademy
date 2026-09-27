@@ -7,10 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { adminRecordManualPayment } from "@/features/commerce/actions/orders";
 
-export function ManualPaymentForm({ orderId }: { orderId: string }) {
+export function ManualPaymentForm({ orderId, defaultAmount }: { orderId: string; defaultAmount?: number }) {
   const te = useTranslations("enums");
   const [loading, setLoading] = useState(false);
-  const [amount, setAmount] = useState("");
+  const [amount, setAmount] = useState(defaultAmount != null ? String(defaultAmount) : "");
   const [method, setMethod] = useState("BANK_TRANSFER");
   const [note, setNote] = useState("");
   const router = useRouter();

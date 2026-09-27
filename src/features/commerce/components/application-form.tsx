@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { submitApplication } from "@/features/commerce/actions/applications";
 
 const schema = z.object({
-  phone: z.string().optional(),
+  phone: z.string().min(1, "Telefon zorunludur"),
   currentExperience: z.string().optional(),
   goal: z.string().min(10, "En az 10 karakter"),
   mainChallenge: z.string().optional(),
@@ -43,8 +43,18 @@ export function ApplicationForm({ productId, locale }: { productId: string; loca
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
       <div className="space-y-2">
-        <Label>Telefon (opsiyonel)</Label>
-        <Input {...register("phone")} />
+        <Label>Telefon *</Label>
+        <Input
+          type="tel"
+          inputMode="numeric"
+          placeholder="+90 5XX XXX XX XX"
+          onInput={(e) => {
+            const t = e.currentTarget;
+            t.value = t.value.replace(/[^\d+\s\-().]/g, "");
+          }}
+          {...register("phone")}
+        />
+        {errors.phone && <p className="text-xs text-red-500">{errors.phone.message}</p>}
       </div>
       <div className="space-y-2">
         <Label>Hedefin nedir? *</Label>

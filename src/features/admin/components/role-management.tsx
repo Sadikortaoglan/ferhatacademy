@@ -12,9 +12,9 @@ const ROLE_LABELS: Record<Role, string> = {
 };
 
 const ROLE_COLORS: Record<Role, string> = {
-  USER: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300",
-  ADMIN: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
-  SUPER_ADMIN: "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300",
+  USER: "bg-secondary text-secondary-foreground",
+  ADMIN: "bg-primary text-primary-foreground",
+  SUPER_ADMIN: "bg-warning-subtle text-warning-subtle-foreground border border-warning/30",
 };
 
 interface RoleManagementProps {
@@ -112,7 +112,7 @@ export function RoleManagement({
             </span>
           </div>
           {selectedRole === Role.SUPER_ADMIN && (
-            <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2">
+            <p className="text-xs text-warning-subtle-foreground bg-warning-subtle border border-warning/40 rounded-lg px-3 py-2">
               ⚠️ Super Admin tüm yönetim yetkilerine sahip olur. Bu işlemi dikkatlice yapın.
             </p>
           )}
@@ -136,12 +136,12 @@ export function RoleManagement({
       )}
 
       {error && (
-        <p className="text-xs text-red-500 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-lg px-3 py-2">
+        <p className="text-xs text-danger-subtle-foreground bg-danger-subtle border border-danger/30 rounded-lg px-3 py-2">
           {error}
         </p>
       )}
       {success && (
-        <p className="text-xs text-green-600 dark:text-green-400">
+        <p className="text-xs text-success-subtle-foreground bg-success-subtle border border-success/30 rounded-lg px-3 py-2">
           ✓ Rol başarıyla güncellendi. Kullanıcının aktif oturumları sonlandırıldı.
         </p>
       )}

@@ -107,12 +107,18 @@ export function ProfileForm({ user }: ProfileFormProps) {
               <Input value={user.email} disabled className="bg-muted/50 text-muted-foreground" />
             </div>
             <div className="space-y-1.5">
-              <Label>Telefon</Label>
+              <Label>Telefon *</Label>
               <Input
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
+                onInput={(e) => {
+                  const t = e.currentTarget;
+                  t.value = t.value.replace(/[^\d+\s\-().]/g, "");
+                }}
                 placeholder="+90 5XX XXX XX XX"
                 type="tel"
+                inputMode="numeric"
+                required
               />
             </div>
             <div className="space-y-1.5">

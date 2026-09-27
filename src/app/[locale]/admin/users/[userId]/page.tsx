@@ -83,9 +83,9 @@ export default async function AdminUserDetailPage({
         <div className="space-y-6">
           {/* Account status banner for banned users */}
           {user.banned && (
-            <div className="rounded-xl border border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-950/20 px-4 py-3 flex items-center gap-3">
-              <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
-              <p className="text-sm text-red-700 dark:text-red-400 font-medium">
+            <div className="rounded-xl border border-danger/30 bg-danger-subtle px-4 py-3 flex items-center gap-3">
+              <span className="w-2 h-2 rounded-full bg-danger shrink-0" />
+              <p className="text-sm text-danger-subtle-foreground font-medium">
                 {t("accountBanned")}
                 {user.banReason && <span className="font-normal"> — {user.banReason}</span>}
               </p>
