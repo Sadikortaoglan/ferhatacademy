@@ -2,7 +2,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/server/auth";
-import { getProductAccessState, formatPrice } from "@/server/commerce";
+import { getProductAccessState } from "@/server/commerce";
+import { resolveProductCta } from "@/server/product-cta";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Lock, PlayCircle } from "lucide-react";
@@ -45,43 +46,41 @@ export default async function ProductDetailPage({
       ? getActiveAppointmentTypes()
       : Promise.resolve([]),
   ]);
-  const accessState = session?.user ? await getProductAccessState(product.id, session.user.id) : "NOT_LOGGED_IN";
+
+  const userState = session?.user
+    ? await getProductAccessState(product.id, session.user.id)
+    : "NOT_LOGGED_IN";
+
+  const { priceLabel, primaryCta, secondaryCta } = resolveProductCta(
+    {
+      id: product.id,
+      slug: product.slug,
+      price: product.price,
+      currency: product.currency,
+      purchaseMode: product.purchaseMode,
+      pricePresentation: product.pricePresentation,
+      ctaFlow: product.ctaFlow,
+      primaryCtaLabelTr: product.primaryCtaLabelTr,
+      primaryCtaLabelEn: product.primaryCtaLabelEn,
+      secondaryCtaLabelTr: product.secondaryCtaLabelTr,
+      secondaryCtaLabelEn: product.secondaryCtaLabelEn,
+      linkedCourseId: product.linkedCourseId,
+      formTemplateId: product.formTemplateId,
+      pageProfileId: product.pageProfileId,
+    },
+    userState,
+    locale,
+  );
+
   const translation = product.translations.find((tr) => tr.locale === locale) ?? product.translations[0];
-  const priceDisplay = product.price === 0
-    ? (locale === "tr" ? "Ücretsiz" : "Free")
-    : formatPrice(product.price, product.currency, locale);
 
-  let ctaLabel = "";
-  let ctaHref = "";
-  let ctaDisabled = false;
-
-  if (accessState === "ENTITLED") {
-    ctaLabel = locale === "tr" ? "Eğitime Git" : "Open Course";
-    ctaHref = product.linkedCourse ? `/${locale}/dashboard/courses/${product.linkedCourse.id}` : `/${locale}/dashboard`;
-  } else if (accessState === "PAYMENT_PENDING") {
-    ctaLabel = locale === "tr" ? "Ödeme Onayı Bekleniyor" : "Payment Pending";
-    ctaDisabled = true;
-  } else if (accessState === "APPLICATION_SUBMITTED") {
-    ctaLabel = locale === "tr" ? "Başvurun İnceleniyor" : "Application Under Review";
-    ctaDisabled = true;
-  } else if (accessState === "APPLICATION_APPROVED") {
-    ctaLabel = locale === "tr" ? "Satın Al" : "Buy Now";
-    ctaHref = `/${locale}/checkout/${product.slug}`;
-  } else if (accessState === "NO_APPLICATION") {
-    ctaLabel = locale === "tr" ? "Başvur" : "Apply";
-    ctaHref = `/${locale}/products/${slug}/apply`;
-  } else if (product.purchaseMode === "INVITE_ONLY") {
-    ctaLabel = locale === "tr" ? "Davet ile" : "Invite Only";
-    ctaDisabled = true;
-  } else if (product.price === 0) {
-    ctaLabel = locale === "tr" ? "Ücretsiz Katıl" : "Enroll Free";
-    ctaHref = `/${locale}/checkout/${product.slug}`;
-  } else {
-    ctaLabel = locale === "tr" ? "Satın Al" : "Buy Now";
-    ctaHref = session?.user
-      ? `/${locale}/checkout/${product.slug}`
-      : `/${locale}/login?returnTo=/${locale}/products/${slug}`;
-  }
+  // Only show appointment CTA as secondary if not already provided by resolver
+  // and product is a service type and user is not entitled
+  const showAppointmentFallback =
+    appointmentTypes.length > 0 &&
+    userState !== "ENTITLED" &&
+    !secondaryCta &&
+    product.ctaFlow !== "INFO_ONLY"; // INFO_ONLY already routes to appointment
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-10 space-y-10">
@@ -94,16 +93,38 @@ export default async function ProductDetailPage({
           {translation?.shortDescription && (
             <p className="text-lg text-muted-foreground">{translation.shortDescription}</p>
           )}
-          <div className="text-3xl font-black text-primary">{priceDisplay}</div>
-          {ctaDisabled ? (
-            <Button size="lg" disabled className="w-full sm:w-auto">{ctaLabel}</Button>
-          ) : ctaHref ? (
-            <Link href={ctaHref}>
-              <Button size="lg" className="w-full sm:w-auto">{ctaLabel}</Button>
-            </Link>
-          ) : null}
-          {/* Secondary CTA: quick appointment for service products */}
-          {appointmentTypes.length > 0 && accessState !== "ENTITLED" && (
+
+          {/* Price — only shown when resolver returns a label */}
+          {priceLabel && (
+            <div className="text-3xl font-black text-primary">{priceLabel}</div>
+          )}
+
+          {/* Primary CTA */}
+          {primaryCta && (
+            primaryCta.disabled ? (
+              <Button size="lg" disabled className="w-full sm:w-auto">{primaryCta.label}</Button>
+            ) : primaryCta.href ? (
+              <Link href={primaryCta.href}>
+                <Button size="lg" variant={primaryCta.variant ?? "default"} className="w-full sm:w-auto">
+                  {primaryCta.label}
+                </Button>
+              </Link>
+            ) : null
+          )}
+
+          {/* Secondary CTA — from resolver config */}
+          {secondaryCta && (
+            secondaryCta.href ? (
+              <Link href={secondaryCta.href}>
+                <Button size="lg" variant="outline" className="w-full sm:w-auto">
+                  {secondaryCta.label}
+                </Button>
+              </Link>
+            ) : null
+          )}
+
+          {/* Secondary CTA — appointment fallback for service products */}
+          {showAppointmentFallback && (
             <AppointmentCTA
               types={appointmentTypes}
               locale={locale}
@@ -115,6 +136,7 @@ export default async function ProductDetailPage({
             />
           )}
         </div>
+
         <div className="aspect-video rounded-xl overflow-hidden bg-muted">
           {product.coverImageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
