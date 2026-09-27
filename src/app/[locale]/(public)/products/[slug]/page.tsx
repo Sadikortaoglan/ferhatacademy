@@ -6,6 +6,8 @@ import { getProductAccessState, formatPrice } from "@/server/commerce";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Lock, PlayCircle } from "lucide-react";
+import { AppointmentCTA } from "@/features/appointments/components/appointment-cta";
+import { getActiveAppointmentTypes } from "@/features/appointments/actions";
 
 export default async function ProductDetailPage({
   params,
@@ -37,7 +39,12 @@ export default async function ProductDetailPage({
 
   if (!product || product.status !== "PUBLISHED") notFound();
 
-  const session = await getSession();
+  const [session, appointmentTypes] = await Promise.all([
+    getSession(),
+    (["MENTORSHIP", "CONSULTATION", "LIVE_TRAINING"] as string[]).includes(product.type)
+      ? getActiveAppointmentTypes()
+      : Promise.resolve([]),
+  ]);
   const accessState = session?.user ? await getProductAccessState(product.id, session.user.id) : "NOT_LOGGED_IN";
   const translation = product.translations.find((tr) => tr.locale === locale) ?? product.translations[0];
   const priceDisplay = product.price === 0
@@ -95,6 +102,18 @@ export default async function ProductDetailPage({
               <Button size="lg" className="w-full sm:w-auto">{ctaLabel}</Button>
             </Link>
           ) : null}
+          {/* Secondary CTA: quick appointment for service products */}
+          {appointmentTypes.length > 0 && accessState !== "ENTITLED" && (
+            <AppointmentCTA
+              types={appointmentTypes}
+              locale={locale}
+              sourcePage={`product/${slug}`}
+              productId={product.id}
+              variant="outline"
+              label={locale === "tr" ? "Önce Ön Görüşme Al" : "Book a Discovery Call"}
+              className="w-full sm:w-auto"
+            />
+          )}
         </div>
         <div className="aspect-video rounded-xl overflow-hidden bg-muted">
           {product.coverImageUrl ? (

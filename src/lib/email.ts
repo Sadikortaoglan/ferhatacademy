@@ -290,3 +290,48 @@ export async function sendPaymentApprovedToCustomer(opts: {
 </div>`,
   });
 }
+
+export async function sendAppointmentConfirmationToUser(opts: {
+  to: string;
+  fullName: string;
+  typeName: string;
+  preferredDate?: string;
+  preferredTimeRange?: string;
+  locale?: string;
+}) {
+  const resend = getResend();
+  if (!resend) return;
+  const isTr = (opts.locale ?? "tr") === "tr";
+  const dateInfo = opts.preferredDate
+    ? `${opts.preferredDate}${opts.preferredTimeRange ? ` · ${opts.preferredTimeRange}` : ""}`
+    : null;
+  await resend.emails.send({
+    from: FROM,
+    to: opts.to,
+    subject: isTr ? "Randevu talebiniz alındı — Ferhat Academy" : "Appointment request received — Ferhat Academy",
+    html: isTr
+      ? `<div style="font-family:sans-serif;max-width:560px;margin:0 auto"><h2 style="color:#f97316">Talebiniz Alındı ✓</h2><p>Merhaba ${opts.fullName},</p><p><strong>${opts.typeName}</strong> için randevu talebinizi aldık.</p>${dateInfo ? `<p>Tercih ettiğiniz zaman: <strong>${dateInfo}</strong></p>` : ""}<p>En kısa sürede sizinle iletişime geçeceğiz.</p><p style="margin-top:24px;color:#888;font-size:12px">Ferhat Academy</p></div>`
+      : `<div style="font-family:sans-serif;max-width:560px;margin:0 auto"><h2 style="color:#f97316">Request Received ✓</h2><p>Hello ${opts.fullName},</p><p>We received your appointment request for <strong>${opts.typeName}</strong>.</p>${dateInfo ? `<p>Your preferred time: <strong>${dateInfo}</strong></p>` : ""}<p>We'll get back to you as soon as possible.</p><p style="margin-top:24px;color:#888;font-size:12px">Ferhat Academy</p></div>`,
+  });
+}
+
+export async function sendAppointmentNotificationToAdmin(opts: {
+  fullName: string;
+  email: string;
+  phone?: string | null;
+  typeName: string;
+  preferredDate?: string | null;
+  preferredTimeRange?: string | null;
+  note?: string | null;
+  appointmentId: string;
+}) {
+  const resend = getResend();
+  if (!resend) return;
+  const adminUrl = `${BASE_URL}/tr/admin/appointments/${opts.appointmentId}`;
+  await resend.emails.send({
+    from: FROM,
+    to: ADMIN_EMAIL,
+    subject: `Yeni randevu talebi: ${opts.fullName} — ${opts.typeName}`,
+    html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto"><h2 style="color:#f97316">Yeni Randevu Talebi</h2><table style="width:100%;border-collapse:collapse;margin:16px 0"><tr><td style="padding:6px 8px;color:#666;width:140px">Kişi</td><td style="padding:6px 8px;font-weight:bold">${opts.fullName}</td></tr><tr><td style="padding:6px 8px;color:#666">E-posta</td><td style="padding:6px 8px">${opts.email}</td></tr>${opts.phone ? `<tr><td style="padding:6px 8px;color:#666">Telefon</td><td style="padding:6px 8px">${opts.phone}</td></tr>` : ""}<tr><td style="padding:6px 8px;color:#666">Görüşme Tipi</td><td style="padding:6px 8px">${opts.typeName}</td></tr>${opts.preferredDate ? `<tr><td style="padding:6px 8px;color:#666">Tercih Tarih</td><td style="padding:6px 8px">${opts.preferredDate}</td></tr>` : ""}${opts.preferredTimeRange ? `<tr><td style="padding:6px 8px;color:#666">Saat Aralığı</td><td style="padding:6px 8px">${opts.preferredTimeRange}</td></tr>` : ""}${opts.note ? `<tr><td style="padding:6px 8px;color:#666">Not</td><td style="padding:6px 8px">${opts.note}</td></tr>` : ""}</table><a href="${adminUrl}" style="display:inline-block;background:#f97316;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;margin-top:8px">Admin Panelde Görüntüle →</a><p style="margin-top:24px;color:#888;font-size:12px">Ferhat Academy</p></div>`,
+  });
+}

@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { AppointmentCTA } from "@/features/appointments/components/appointment-cta";
+import { getActiveAppointmentTypes } from "@/features/appointments/actions";
 
 const COLOR_MAP: Record<string, string> = {
   blue: "#3b82f6",
@@ -56,7 +58,7 @@ export default async function AboutPage({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
-  const data = await getAboutData();
+  const [data, appointmentTypes] = await Promise.all([getAboutData(), getActiveAppointmentTypes()]);
 
   const INSTAGRAM_URL = data.instagramUrl;
   const YOUTUBE_URL = data.youtubeUrl;
@@ -236,9 +238,18 @@ export default async function AboutPage({
             Eğitimlerime katıl, mentörlük programına başvur ya da doğrudan ulaş.
           </p>
           <div className="flex flex-wrap justify-center gap-3">
+            {appointmentTypes.length > 0 && (
+              <AppointmentCTA
+                types={appointmentTypes}
+                locale={locale}
+                sourcePage="about"
+                variant="primary"
+                label={locale === "tr" ? "Ücretsiz Ön Görüşme Al" : "Book a Free Call"}
+              />
+            )}
             <Link
               href={`/${locale}/products`}
-              className="rounded-full bg-primary px-6 py-3 text-sm font-bold text-white hover:opacity-90 transition-opacity"
+              className="rounded-full border border-white/20 bg-white/5 px-6 py-3 text-sm font-bold text-white hover:bg-white/10 transition-colors"
             >
               Eğitimlere Bak
             </Link>

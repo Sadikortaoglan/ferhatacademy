@@ -349,7 +349,8 @@
     "searchPlaceholder": "Ad veya e-posta ara...",
     "accountBanned": "Bu hesap pasifleştirildi.",
     "banReason": "Sebep",
-    "appProfiles": "Başvuru Sayfaları"
+    "appProfiles": "Başvuru Sayfaları",
+    "appointments": "Randevular"
   },
   "errors": {
     "notFound": "Sayfa bulunamadı",
